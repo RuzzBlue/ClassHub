@@ -1,22 +1,36 @@
-import { app } from 'electron'
 import { join, dirname } from 'path'
 import { existsSync, mkdirSync } from 'fs'
-import { is } from '@electron-toolkit/utils'
 
-/** Application root — repo root in dev, install dir in production. */
+function getElectronApp(): import('electron').App | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('electron').app as import('electron').App
+  } catch {
+    return null
+  }
+}
+
+function isElectronDev(app: import('electron').App | null): boolean {
+  return Boolean(app && !app.isPackaged)
+}
+
+/** Application root — repo root in dev / web server, install dir in production Electron. */
 export function getAppRoot(): string {
-  if (is.dev) {
+  const electronApp = getElectronApp()
+  if (!electronApp || isElectronDev(electronApp)) {
     return process.cwd()
   }
-  return dirname(app.getPath('exe'))
+  return dirname(electronApp.getPath('exe'))
 }
 
 /** Bundled courses live in courses/ next to the app. */
 export function getCoursesPath(): string {
+  const electronApp = getElectronApp()
   const candidates = [
     join(getAppRoot(), 'courses'),
-    join(process.resourcesPath, 'courses'),
-    join(dirname(app.getAppPath()), 'courses')
+    ...(electronApp
+      ? [join(process.resourcesPath, 'courses'), join(dirname(electronApp.getAppPath()), 'courses')]
+      : [])
   ]
   for (const p of candidates) {
     if (existsSync(p)) return p

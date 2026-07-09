@@ -2,6 +2,7 @@ export const API_CHANNELS = {
   FETCH: 'api:fetch',
   SELECT_FOLDER: 'dialog:selectFolder',
   SELECT_FILE: 'dialog:selectFile',
+  SELECT_SAVE_FILE: 'dialog:selectSaveFile',
   OPEN_PRESENTER: 'window:openPresenter',
   CLOSE_PRESENTER: 'window:closePresenter',
   GET_APP_PATH: 'app:getPath',

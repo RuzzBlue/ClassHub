@@ -1,18 +1,21 @@
 import { dialog, app } from 'electron'
 import { join } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 import { nanoid } from 'nanoid'
 import type { ApiRequest, ApiResponse } from '@shared/api'
 import type { AppSettings } from '@shared/types'
 import { DEFAULT_SETTINGS } from '@shared/types'
 import { dataStore, hashPassword } from './data-store'
+import { getStagingPath } from './paths'
 import {
   importBundle,
   removeCourse,
   getManifest,
   listCourses,
   resolveAssetPath,
-  syncCourseRegistry
+  syncCourseRegistry,
+  exportCourse,
+  exportCourseAsBase64
 } from './bundle-service'
 import {
   getProgressSnapshot,
@@ -70,12 +73,41 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
       return ok(listCourses(userId))
     }
 
+    if (method === 'POST' && path === '/api/courses/sync') {
+      const result = syncCourseRegistry()
+      const settings = dataStore.getSettings()
+      const userId = settings.activeUserId || 'guest'
+      return ok({ ...result, courses: listCourses(userId) })
+    }
+
     if (method === 'POST' && path === '/api/courses/import') {
-      const { zipPath } = body as { zipPath: string }
-      if (!zipPath) return err('zipPath required', 400)
-      const result = importBundle(zipPath)
+      const { zipPath, fileName, content } = body as {
+        zipPath?: string
+        fileName?: string
+        content?: string
+      }
+      let pathToImport = zipPath
+      if (!pathToImport && content) {
+        pathToImport = join(getStagingPath(), fileName || `import-${Date.now()}.zip`)
+        writeFileSync(pathToImport, Buffer.from(content, 'base64'))
+      }
+      if (!pathToImport) return err('zipPath or content required', 400)
+      const result = importBundle(pathToImport)
       if (!result.success) return { ok: false, status: 400, error: 'Import failed', details: result.errors }
       return ok(result)
+    }
+
+    if (method === 'POST' && path.match(/^\/api\/courses\/[^/]+\/export$/)) {
+      const courseId = path.split('/')[3]
+      const { savePath } = body as { savePath?: string }
+      if (savePath) {
+        const result = exportCourse(courseId, savePath)
+        if (!result.success) return err(result.error || 'Export failed', 400)
+        return ok({ success: true, path: savePath })
+      }
+      const exported = exportCourseAsBase64(courseId)
+      if (!exported) return err('Course not found', 404)
+      return ok(exported)
     }
 
     if (method === 'DELETE' && path.startsWith('/api/courses/')) {
@@ -290,4 +322,12 @@ export async function selectFile(filters?: { name: string; extensions: string[] 
     filters: filters || [{ name: 'Course Bundle', extensions: ['zip'] }]
   })
   return result.canceled ? null : result.filePaths[0]
+}
+
+export async function selectSaveFile(defaultName: string): Promise<string | null> {
+  const result = await dialog.showSaveDialog({
+    defaultPath: defaultName.endsWith('.zip') ? defaultName : `${defaultName}.zip`,
+    filters: [{ name: 'Course Bundle', extensions: ['zip'] }]
+  })
+  return result.canceled || !result.filePath ? null : result.filePath
 }

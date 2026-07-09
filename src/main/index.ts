@@ -18,7 +18,7 @@ import { app, shell, BrowserWindow, ipcMain, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { handleApiRequest, selectFile, setPresenterCallback } from './api-router'
+import { handleApiRequest, selectFile, selectSaveFile, setPresenterCallback } from './api-router'
 import { dataStore } from './data-store'
 import { syncCourseRegistry } from './bundle-service'
 import { resolveAssetPath } from './bundle-service'
@@ -126,6 +126,8 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle(API_CHANNELS.SELECT_FILE, async (_, filters) => selectFile(filters))
+
+  ipcMain.handle(API_CHANNELS.SELECT_SAVE_FILE, async (_, defaultName: string) => selectSaveFile(defaultName))
 
   ipcMain.handle(API_CHANNELS.OPEN_PRESENTER, (_, { courseId, lessonId, sectionId }) => {
     createPresenterWindow(courseId, lessonId, sectionId)

@@ -9,6 +9,8 @@ const classhubApi = {
   selectFolder: (): Promise<string | null> => ipcRenderer.invoke(API_CHANNELS.SELECT_FOLDER),
   selectFile: (filters?: { name: string; extensions: string[] }[]): Promise<string | null> =>
     ipcRenderer.invoke(API_CHANNELS.SELECT_FILE, filters),
+  selectSaveFile: (defaultName: string): Promise<string | null> =>
+    ipcRenderer.invoke(API_CHANNELS.SELECT_SAVE_FILE, defaultName),
   openPresenter: (courseId: string, lessonId: string, sectionId: string): Promise<void> =>
     ipcRenderer.invoke(API_CHANNELS.OPEN_PRESENTER, { courseId, lessonId, sectionId }),
   closePresenter: (): Promise<void> => ipcRenderer.invoke(API_CHANNELS.CLOSE_PRESENTER),

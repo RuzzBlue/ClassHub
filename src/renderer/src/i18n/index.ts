@@ -5,13 +5,22 @@ const resources = {
   en: {
     translation: {
       app: { name: 'ClassHub', tagline: 'Your learning hub' },
-      nav: { library: 'Library', settings: 'Settings', import: 'Import Bundle', help: 'Help' },
+      nav: {
+        library: 'Library',
+        settings: 'Settings',
+        import: 'Import Course',
+        importMore: 'More course actions',
+        syncCourses: 'Sync Courses',
+        exportCourse: 'Export Course',
+        exportCourseHint: 'Choose a course to export as a .zip bundle.',
+        help: 'Help'
+      },
       library: {
         title: 'Course Library',
         search: 'Search courses...',
         filter: 'Filter',
         noCourses: 'No courses installed yet.',
-        importFirst: 'Import a course bundle to get started.',
+        importFirst: 'Import a course or use Sync Courses if you added folders manually.',
         open: 'Start Course',
         remove: 'Remove',
         removeConfirmTitle: 'Remove course?',
@@ -107,13 +116,22 @@ const resources = {
   es: {
     translation: {
       app: { name: 'ClassHub', tagline: 'Tu centro de aprendizaje' },
-      nav: { library: 'Biblioteca', settings: 'Configuración', import: 'Importar Paquete', help: 'Ayuda' },
+      nav: {
+        library: 'Biblioteca',
+        settings: 'Configuración',
+        import: 'Importar Curso',
+        importMore: 'Más acciones de curso',
+        syncCourses: 'Sincronizar Cursos',
+        exportCourse: 'Exportar Curso',
+        exportCourseHint: 'Elige un curso para exportar como paquete .zip.',
+        help: 'Ayuda'
+      },
       library: {
         title: 'Biblioteca de Cursos',
         search: 'Buscar cursos...',
         filter: 'Filtrar',
         noCourses: 'No hay cursos instalados.',
-        importFirst: 'Importa un paquete de curso para comenzar.',
+        importFirst: 'Importa un curso o usa Sincronizar Cursos si agregaste carpetas manualmente.',
         open: 'Iniciar curso',
         remove: 'Eliminar',
         removeConfirmTitle: '¿Eliminar curso?',

@@ -6,7 +6,8 @@ import { CourseCard } from '../components/CourseCard'
 import { LoginModal } from '../components/LoginModal'
 import { ProfileModal } from '../components/ProfileModal'
 import { HelpModal } from '../components/HelpModal'
-import { apiFetch, selectFile } from '../lib/api-client'
+import { ImportCourseMenu } from '../components/ImportCourseMenu'
+import { apiFetch } from '../lib/api-client'
 
 export function LibraryPage(): React.JSX.Element {
   const { t } = useTranslation()
@@ -16,7 +17,6 @@ export function LibraryPage(): React.JSX.Element {
   const [loginOpen, setLoginOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     loadCourses()
@@ -27,15 +27,6 @@ export function LibraryPage(): React.JSX.Element {
     window.addEventListener('classhub:help', openHelp)
     return () => window.removeEventListener('classhub:help', openHelp)
   }, [])
-
-  const handleImport = async (): Promise<void> => {
-    const zipPath = await selectFile()
-    if (!zipPath) return
-    setImporting(true)
-    const res = await apiFetch({ method: 'POST', path: '/api/courses/import', body: { zipPath } })
-    if (res.ok) await loadCourses()
-    setImporting(false)
-  }
 
   const filtered = courses.filter(
     (c) =>
@@ -60,9 +51,7 @@ export function LibraryPage(): React.JSX.Element {
           <button className="btn btn-ghost text-sm">
             <i className="fas fa-th-large" /> {t('nav.library')}
           </button>
-          <button className="btn btn-ghost text-sm" onClick={handleImport} disabled={importing}>
-            <i className={`fas ${importing ? 'fa-spinner fa-spin' : 'fa-file-import'}`} /> {t('nav.import')}
-          </button>
+          <ImportCourseMenu courses={courses} onCoursesChange={loadCourses} />
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <div className="flex items-center gap-2 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 w-64">
@@ -107,9 +96,9 @@ export function LibraryPage(): React.JSX.Element {
               <i className="fas fa-book-open text-5xl text-[var(--color-text-muted)] mb-4" />
               <p className="text-lg">{t('library.noCourses')}</p>
               <p className="text-[var(--color-text-muted)]">{t('library.importFirst')}</p>
-              <button className="btn btn-primary mt-4" onClick={handleImport}>
-                <i className="fas fa-file-import" /> {t('nav.import')}
-              </button>
+              <div className="mt-4 flex justify-center">
+                <ImportCourseMenu courses={courses} onCoursesChange={loadCourses} compact />
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

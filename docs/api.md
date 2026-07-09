@@ -10,8 +10,10 @@ Base URL: `/api`
 
 ## Courses
 
-- `GET /api/courses` — List installed courses
-- `POST /api/courses/import` — Import zip bundle
+- `GET /api/courses` — List installed courses (auto-syncs `courses/` folder)
+- `POST /api/courses/sync` — Rescan `courses/` and refresh registry
+- `POST /api/courses/import` — Import zip bundle (`zipPath` or base64 `content`)
+- `POST /api/courses/:id/export` — Export course to zip (`savePath` or base64 download)
 - `DELETE /api/courses/:id` — Remove course
 - `GET /api/courses/:id/manifest` — Get course.json
 - `GET /api/courses/:id/asset?path=` — Get bundle file (base64)

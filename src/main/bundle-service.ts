@@ -63,12 +63,12 @@ export function validateBundle(bundlePath: string): { valid: boolean; manifest?:
   return { valid: errors.length === 0, manifest, errors }
 }
 
-/** Scan courses/ folder and sync registry with any bundle containing course.json. */
-export function syncCourseRegistry(): void {
+/** Scan courses/ folder and sync registry.json with any bundle containing course.json. */
+export function syncCourseRegistry(): { synced: number; courseIds: string[] } {
   const coursesPath = getCoursesPath()
   if (!existsSync(coursesPath)) {
     mkdirSync(coursesPath, { recursive: true })
-    return
+    return { synced: 0, courseIds: [] }
   }
   const registry = dataStore.getRegistry()
   const found = new Map<string, { id: string; path: string; installedAt: string; version: string }>()
@@ -95,6 +95,7 @@ export function syncCourseRegistry(): void {
 
   registry.courses = Array.from(found.values())
   dataStore.saveRegistry(registry)
+  return { synced: registry.courses.length, courseIds: registry.courses.map((c) => c.id) }
 }
 
 export function importBundle(zipPath: string): ImportResult {
@@ -187,6 +188,38 @@ export function resolveAssetPath(courseId: string, relativePath: string): string
   if (!resolved.startsWith(normalize(coursePath))) return null
   if (!existsSync(resolved)) return null
   return resolved
+}
+
+export function exportCourse(courseId: string, destZipPath: string): { success: boolean; error?: string } {
+  const coursePath = getCoursePath(courseId)
+  if (!coursePath || !existsSync(coursePath)) {
+    return { success: false, error: 'Course not found' }
+  }
+  const manifest = getManifest(courseId)
+  if (!manifest) {
+    return { success: false, error: 'Invalid course manifest' }
+  }
+  try {
+    const zip = new AdmZip()
+    zip.addLocalFolder(coursePath)
+    zip.writeZip(destZipPath)
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+}
+
+export function exportCourseAsBase64(courseId: string): { fileName: string; content: string } | null {
+  const coursePath = getCoursePath(courseId)
+  if (!coursePath || !existsSync(coursePath)) return null
+  const manifest = getManifest(courseId)
+  if (!manifest) return null
+  const zip = new AdmZip()
+  zip.addLocalFolder(coursePath)
+  return {
+    fileName: `${manifest.id}.zip`,
+    content: zip.toBuffer().toString('base64')
+  }
 }
 
 export function listCourses(userId: string): CourseCardData[] {

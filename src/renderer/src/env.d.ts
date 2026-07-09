@@ -6,6 +6,7 @@ declare global {
       fetch: <T = unknown>(req: ApiRequest) => Promise<ApiResponse<T>>
       selectFolder: () => Promise<string | null>
       selectFile: (filters?: { name: string; extensions: string[] }[]) => Promise<string | null>
+      selectSaveFile: (defaultName: string) => Promise<string | null>
       openPresenter: (courseId: string, lessonId: string, sectionId: string) => Promise<void>
       closePresenter: () => Promise<void>
       getAppPath: (name: string) => Promise<string>

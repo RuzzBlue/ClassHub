@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "classhub-server"
 version = "1.0.0"
 description = "ClassHub Python fallback server for Mac/Linux"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
