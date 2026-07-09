@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
@@ -10,21 +10,41 @@ interface Props {
   onClose: () => void
 }
 
-type Tab = 'profile' | 'app' | 'role' | 'license'
+type Tab = 'profile' | 'app' | 'role'
 
 export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null {
   const { t, i18n } = useTranslation()
   const { settings, user, updateSettings, loadUser, logout } = useAppStore()
   const [tab, setTab] = useState<Tab>('profile')
-  const [displayName, setDisplayName] = useState(user?.displayName || '')
-  const [email, setEmail] = useState(user?.email || '')
+  const [displayName, setDisplayName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [accent, setAccent] = useState(settings?.theme.accent || '#6c5ce7')
-  const [mode, setMode] = useState<'dark' | 'light'>(settings?.theme.mode || 'dark')
-  const [sounds, setSounds] = useState(settings?.theme.sounds ?? true)
-  const [locale, setLocale] = useState(settings?.locale || 'en')
+  const [accent, setAccent] = useState('#6c5ce7')
+  const [mode, setMode] = useState<'dark' | 'light'>('dark')
+  const [sounds, setSounds] = useState(true)
+  const [locale, setLocale] = useState<'en' | 'es'>('en')
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (open && user) {
+      setDisplayName(user.displayName)
+      setEmail(user.email || '')
+      setPassword('')
+      setConfirmPassword('')
+      setMessage('')
+      setTab('profile')
+    }
+  }, [open, user])
+
+  useEffect(() => {
+    if (open && settings) {
+      setAccent(settings.theme.accent)
+      setMode(settings.theme.mode)
+      setSounds(settings.theme.sounds)
+      setLocale(settings.locale)
+    }
+  }, [open, settings])
 
   if (!open || !user) return null
 
@@ -33,18 +53,21 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
       setMessage(t('auth.passwordMismatch'))
       return
     }
-    const body: Record<string, string> = { displayName, email }
+    const body: Record<string, string> = { displayName }
+    if (email.trim()) body.email = email.trim()
     if (password) body.password = password
-    await apiFetch<User>({ method: 'PUT', path: `/api/users/${user.id}`, body })
-    await loadUser()
-    setPassword('')
-    setConfirmPassword('')
-    setMessage(t('settings.saved'))
+    const res = await apiFetch<User>({ method: 'PUT', path: `/api/users/${user.id}`, body })
+    if (res.ok) {
+      await loadUser()
+      setPassword('')
+      setConfirmPassword('')
+      setMessage(t('settings.saved'))
+    }
   }
 
   const handleSaveApp = async (): Promise<void> => {
     await updateSettings({
-      locale: locale as 'en' | 'es',
+      locale,
       theme: { accent, mode, sounds }
     })
     i18n.changeLanguage(locale)
@@ -60,8 +83,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
   const tabs: { id: Tab; label: string; icon: string; disabled?: boolean }[] = [
     { id: 'profile', label: t('settings.profile'), icon: 'fa-user' },
     { id: 'app', label: t('settings.appSettings'), icon: 'fa-palette' },
-    { id: 'role', label: t('settings.role'), icon: 'fa-user-tag', disabled: true },
-    { id: 'license', label: t('settings.license'), icon: 'fa-key', disabled: true }
+    { id: 'role', label: t('settings.role'), icon: 'fa-user-tag', disabled: true }
   ]
 
   return (
@@ -77,7 +99,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
             </div>
             <div>
               <h2 className="font-semibold">{user.displayName}</h2>
-              <p className="text-xs text-[var(--color-text-muted)]">{user.email}</p>
+              <p className="text-xs text-[var(--color-text-muted)]">{user.email || '—'}</p>
             </div>
           </div>
           <button className="btn btn-ghost p-2" onClick={onClose}>
@@ -178,14 +200,6 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
                 {t('settings.save')}
               </button>
             </>
-          )}
-
-          {tab === 'role' && (
-            <p className="text-sm text-[var(--color-text-muted)] text-center py-8">{t('settings.comingSoon')}</p>
-          )}
-
-          {tab === 'license' && (
-            <p className="text-sm text-[var(--color-text-muted)] text-center py-8">{t('settings.comingSoon')}</p>
           )}
 
           {message && <p className="text-sm text-center text-[var(--color-success)]">{message}</p>}

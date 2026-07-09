@@ -4,7 +4,8 @@ export const API_CHANNELS = {
   SELECT_FILE: 'dialog:selectFile',
   OPEN_PRESENTER: 'window:openPresenter',
   CLOSE_PRESENTER: 'window:closePresenter',
-  GET_APP_PATH: 'app:getPath'
+  GET_APP_PATH: 'app:getPath',
+  GET_VERSION: 'app:getVersion'
 } as const
 
 export interface ApiRequest {

@@ -219,6 +219,7 @@ function buildCourseCard(
     estimatedHours: manifest.estimatedHours,
     thumbnailUrl: manifest.thumbnail ? `classhub://course/${manifest.id}/${manifest.thumbnail}` : null,
     coverUrl: manifest.cover ? `classhub://course/${manifest.id}/${manifest.cover}` : null,
+    imagePath: manifest.cover || manifest.thumbnail || null,
     tags: manifest.tags,
     moduleCount: countModules(manifest),
     lessonCount: countLessons(manifest),

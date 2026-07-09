@@ -216,10 +216,12 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
     if (method === 'PUT' && path.startsWith('/api/users/')) {
       const userId = path.split('/').pop()!
       const updates = body as Partial<{ displayName: string; role: string; email: string; password: string }>
-      const patch: Record<string, unknown> = { ...updates }
+      const patch: Record<string, unknown> = {}
+      if (updates.displayName !== undefined) patch.displayName = updates.displayName
+      if (updates.role !== undefined) patch.role = updates.role
+      if (updates.email?.trim()) patch.email = updates.email.trim()
       if (updates.password) {
         patch.passwordHash = hashPassword(updates.password)
-        delete patch.password
       }
       const updated = dataStore.updateUser(userId, patch)
       if (!updated) return err('User not found', 404)

@@ -11,9 +11,11 @@ const resources = {
         search: 'Search courses...',
         filter: 'Filter',
         noCourses: 'No courses installed yet.',
-        importFirst: 'Import a course bundle or install the demo course.',
-        open: 'Open Course',
+        importFirst: 'Import a course bundle to get started.',
+        open: 'Start Course',
         remove: 'Remove',
+        removeConfirmTitle: 'Remove course?',
+        removeConfirmMessage: 'Are you sure you want to remove "{{title}}" from your library? This cannot be undone.',
         modules: 'modules',
         lessons: 'lessons',
         hours: 'hours',
@@ -93,7 +95,13 @@ const resources = {
         notes: 'Instructor Notes',
         followMode: 'Follow Mode (coming soon)'
       },
-      levels: { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' }
+      levels: { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' },
+      common: { cancel: 'Cancel', confirm: 'Confirm', close: 'Close' },
+      help: {
+        version: 'Version {{version}}',
+        createdBy: 'Created by',
+        builtWith: 'Built with assistance from'
+      }
     }
   },
   es: {
@@ -105,9 +113,11 @@ const resources = {
         search: 'Buscar cursos...',
         filter: 'Filtrar',
         noCourses: 'No hay cursos instalados.',
-        importFirst: 'Importa un paquete de curso o instala el curso demo.',
-        open: 'Abrir Curso',
+        importFirst: 'Importa un paquete de curso para comenzar.',
+        open: 'Iniciar curso',
         remove: 'Eliminar',
+        removeConfirmTitle: '¿Eliminar curso?',
+        removeConfirmMessage: '¿Seguro que deseas eliminar "{{title}}" de tu biblioteca? Esta acción no se puede deshacer.',
         modules: 'módulos',
         lessons: 'lecciones',
         hours: 'horas',
@@ -187,7 +197,13 @@ const resources = {
         notes: 'Notas del instructor',
         followMode: 'Modo seguimiento (próximamente)'
       },
-      levels: { beginner: 'Principiante', intermediate: 'Intermedio', advanced: 'Avanzado' }
+      levels: { beginner: 'Principiante', intermediate: 'Intermedio', advanced: 'Avanzado' },
+      common: { cancel: 'Cancelar', confirm: 'Confirmar', close: 'Cerrar' },
+      help: {
+        version: 'Versión {{version}}',
+        createdBy: 'Creado por',
+        builtWith: 'Desarrollado con asistencia de'
+      }
     }
   }
 }

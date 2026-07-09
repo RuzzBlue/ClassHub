@@ -86,6 +86,7 @@ export interface CourseCardData {
   estimatedHours?: number
   thumbnailUrl: string | null
   coverUrl: string | null
+  imagePath: string | null
   tags: string[]
   moduleCount: number
   lessonCount: number

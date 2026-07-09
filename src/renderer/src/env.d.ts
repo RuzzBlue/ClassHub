@@ -9,6 +9,8 @@ declare global {
       openPresenter: (courseId: string, lessonId: string, sectionId: string) => Promise<void>
       closePresenter: () => Promise<void>
       getAppPath: (name: string) => Promise<string>
+      getVersion: () => Promise<string>
+      onMenuAction: (callback: (action: string) => void) => () => void
       onPresenterUpdate: (callback: (data: unknown) => void) => () => void
     }
     electron: {

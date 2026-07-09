@@ -5,6 +5,7 @@ import { useAppStore } from '../stores/app-store'
 import { CourseCard } from '../components/CourseCard'
 import { LoginModal } from '../components/LoginModal'
 import { ProfileModal } from '../components/ProfileModal'
+import { HelpModal } from '../components/HelpModal'
 import { apiFetch, selectFile } from '../lib/api-client'
 
 export function LibraryPage(): React.JSX.Element {
@@ -14,18 +15,18 @@ export function LibraryPage(): React.JSX.Element {
   const [search, setSearch] = useState('')
   const [loginOpen, setLoginOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     loadCourses()
   }, [loadCourses])
 
-  const filtered = courses.filter(
-    (c) =>
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.author.toLowerCase().includes(search.toLowerCase()) ||
-      c.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
-  )
+  useEffect(() => {
+    const openHelp = (): void => setHelpOpen(true)
+    window.addEventListener('classhub:help', openHelp)
+    return () => window.removeEventListener('classhub:help', openHelp)
+  }, [])
 
   const handleImport = async (): Promise<void> => {
     const zipPath = await selectFile()
@@ -35,6 +36,13 @@ export function LibraryPage(): React.JSX.Element {
     if (res.ok) await loadCourses()
     setImporting(false)
   }
+
+  const filtered = courses.filter(
+    (c) =>
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.author.toLowerCase().includes(search.toLowerCase()) ||
+      c.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
+  )
 
   const handleRemove = async (id: string): Promise<void> => {
     await apiFetch({ method: 'DELETE', path: `/api/courses/${id}` })
@@ -57,10 +65,10 @@ export function LibraryPage(): React.JSX.Element {
           </button>
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <div className="relative">
-            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-sm" />
+          <div className="flex items-center gap-2 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 w-64">
+            <i className="fas fa-search text-[var(--color-text-muted)] text-sm shrink-0" />
             <input
-              className="input pl-9 py-1.5 text-sm w-64"
+              className="bg-transparent border-none outline-none text-sm w-full text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]"
               placeholder={t('library.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -120,6 +128,7 @@ export function LibraryPage(): React.JSX.Element {
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   )
 }

@@ -82,7 +82,8 @@ export class DataStore {
   }
 
   private seedDefaultUser(): void {
-    if (this.progress.users.length === 0) {
+    const demo = this.progress.users.find((u) => u.id === 'user-demo')
+    if (!demo) {
       this.createUser({
         id: 'user-demo',
         displayName: 'Demo Learner',
@@ -93,6 +94,10 @@ export class DataStore {
         prefs: {},
         createdAt: new Date().toISOString()
       })
+    } else if (!demo.email) {
+      demo.email = 'demo@classhub.local'
+      if (!demo.passwordHash) demo.passwordHash = hashPassword('demo123')
+      this.saveProgress()
     }
   }
 
@@ -162,6 +167,9 @@ export class DataStore {
     const user = this.progress.users.find((u) => u.id === id)
     if (!user) return null
     const updated = { ...user, ...updates, id }
+    if (!updates.email?.trim()) {
+      updated.email = user.email
+    }
     this.createUser(updated)
     return this.getUser(id)
   }

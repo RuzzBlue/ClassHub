@@ -13,6 +13,12 @@ const classhubApi = {
     ipcRenderer.invoke(API_CHANNELS.OPEN_PRESENTER, { courseId, lessonId, sectionId }),
   closePresenter: (): Promise<void> => ipcRenderer.invoke(API_CHANNELS.CLOSE_PRESENTER),
   getAppPath: (name: string): Promise<string> => ipcRenderer.invoke(API_CHANNELS.GET_APP_PATH, name),
+  getVersion: (): Promise<string> => ipcRenderer.invoke(API_CHANNELS.GET_VERSION),
+  onMenuAction: (callback: (action: string) => void): (() => void) => {
+    const handler = (_: unknown, action: string): void => callback(action)
+    ipcRenderer.on('menu:action', handler)
+    return () => ipcRenderer.removeListener('menu:action', handler)
+  },
   onPresenterUpdate: (callback: (data: unknown) => void): (() => void) => {
     const handler = (_: unknown, data: unknown): void => callback(data)
     ipcRenderer.on('presenter:update', handler)

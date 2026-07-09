@@ -1,9 +1,35 @@
 import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from './stores/app-store'
 import { LibraryPage } from './pages/LibraryPage'
 import { CoursePage } from './pages/CoursePage'
 import { PresenterPage } from './pages/PresenterPage'
+import { selectFile } from './lib/api-client'
+import { apiFetch } from './lib/api-client'
+
+function MenuListener(): null {
+  const navigate = useNavigate()
+  const { loadCourses } = useAppStore()
+
+  useEffect(() => {
+    if (!window.classhub?.onMenuAction) return
+    return window.classhub.onMenuAction(async (action) => {
+      if (action === 'library') navigate('/')
+      if (action === 'import') {
+        const zipPath = await selectFile()
+        if (zipPath) {
+          await apiFetch({ method: 'POST', path: '/api/courses/import', body: { zipPath } })
+          await loadCourses()
+        }
+      }
+      if (action === 'help') {
+        window.dispatchEvent(new CustomEvent('classhub:help'))
+      }
+    })
+  }, [navigate, loadCourses])
+
+  return null
+}
 
 export default function App(): React.JSX.Element {
   const { loading, loadSettings, loadUser } = useAppStore()
@@ -22,6 +48,7 @@ export default function App(): React.JSX.Element {
 
   return (
     <HashRouter>
+      <MenuListener />
       <Routes>
         <Route path="/" element={<LibraryPage />} />
         <Route path="/course/:courseId" element={<CoursePage />} />

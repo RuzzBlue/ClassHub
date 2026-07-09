@@ -1,4 +1,20 @@
-import { app, shell, BrowserWindow, ipcMain, protocol, net } from 'electron'
+import { protocol } from 'electron'
+
+// Must run before app.ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'classhub',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true
+    }
+  }
+])
+
+import { app, shell, BrowserWindow, ipcMain, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -6,7 +22,7 @@ import { handleApiRequest, selectFile, setPresenterCallback } from './api-router
 import { dataStore } from './data-store'
 import { syncCourseRegistry } from './bundle-service'
 import { resolveAssetPath } from './bundle-service'
-import { readFileSync } from 'fs'
+import { buildAppMenu } from './menu'
 import type { ApiRequest } from '@shared/api'
 import { API_CHANNELS } from '@shared/api'
 
@@ -21,7 +37,7 @@ function createMainWindow(): void {
     minHeight: 600,
     show: false,
     title: 'ClassHub',
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -76,13 +92,15 @@ function createPresenterWindow(courseId: string, lessonId: string, sectionId: st
 function registerProtocol(): void {
   protocol.handle('classhub', async (request) => {
     const url = new URL(request.url)
-    const parts = url.pathname.split('/').filter(Boolean)
-    if (parts[0] === 'course' && parts.length >= 3) {
-      const courseId = parts[1]
-      const assetPath = parts.slice(2).join('/')
-      const resolved = resolveAssetPath(courseId, decodeURIComponent(assetPath))
-      if (resolved) {
-        return net.fetch(pathToFileURL(resolved).toString())
+    if (url.hostname === 'course') {
+      const pathParts = url.pathname.split('/').filter(Boolean)
+      const courseId = pathParts[0]
+      const assetPath = pathParts.slice(1).join('/')
+      if (courseId && assetPath) {
+        const resolved = resolveAssetPath(courseId, decodeURIComponent(assetPath))
+        if (resolved) {
+          return net.fetch(pathToFileURL(resolved).toString())
+        }
       }
     }
     return new Response('Not found', { status: 404 })
@@ -125,6 +143,9 @@ app.whenReady().then(() => {
   })
 
   createMainWindow()
+  buildAppMenu(mainWindow!)
+
+  ipcMain.handle(API_CHANNELS.GET_VERSION, () => app.getVersion())
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
