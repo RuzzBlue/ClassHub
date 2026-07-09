@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "classhub-server"
+version = "1.0.0"
+description = "ClassHub Python fallback server for Mac/Linux"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "python-multipart>=0.0.18",
+]
+
+[project.scripts]
+classhub-server = "classhub_server.main:run"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["classhub_server*"]

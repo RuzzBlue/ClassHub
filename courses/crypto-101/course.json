@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "1.0",
+  "id": "crypto-101",
+  "title": "Crypto 101 — Fundamentos de Blockchain",
+  "description": "Curso introductorio sobre cryptoactivos, blockchain y wallets. Diseñado para brindar las bases prácticas y teóricas del ecosistema blockchain. La información compartida tiene fines educativos y NO constituye asesoramiento financiero o legal.",
+  "author": "ClassHub Demo",
+  "version": "1.0.0",
+  "language": "es",
+  "level": "beginner",
+  "estimatedHours": 4,
+  "thumbnail": "thumbnail.png",
+  "cover": "cover.png",
+  "tags": ["blockchain", "crypto", "bitcoin", "wallets"],
+  "roles": ["learner", "instructor"],
+  "demoLicenseKey": "CLASSHUB-DEMO-2026",
+  "access": {
+    "defaultPolicy": "free",
+    "licenseRequired": false,
+    "rules": [
+      { "target": "lesson:l01-wallets-overview", "policy": "licensed" },
+      { "target": "module:m02-wallets", "policy": "licensed" }
+    ]
+  },
+  "navigation": {
+    "modules": [
+      {
+        "id": "m01-foundations",
+        "title": "Fundamentos",
+        "order": 1,
+        "units": [
+          {
+            "id": "u01-introduction",
+            "title": "Introducción",
+            "order": 1,
+            "lessons": [
+              {
+                "id": "l01-what-is-crypto",
+                "title": "¿Qué son los cryptoactivos?",
+                "order": 1,
+                "entry": "content/m01-foundations/u01-introduction/l01-what-is-crypto/lesson.html",
+                "quiz": "content/m01-foundations/u01-introduction/l01-what-is-crypto/quiz.json",
+                "access": "free",
+                "estimatedMinutes": 15
+              },
+              {
+                "id": "l02-blockchain-basics",
+                "title": "Blockchain — Conceptos básicos",
+                "order": 2,
+                "entry": "content/m01-foundations/u01-introduction/l02-blockchain-basics/lesson.html",
+                "quiz": "content/m01-foundations/u01-introduction/l02-blockchain-basics/quiz.json",
+                "access": "free",
+                "estimatedMinutes": 20
+              }
+            ]
+          },
+          {
+            "id": "u02-ecosystem",
+            "title": "El Ecosistema",
+            "order": 2,
+            "lessons": [
+              {
+                "id": "l01-wallets-overview",
+                "title": "Wallets — Visión general",
+                "order": 1,
+                "entry": "content/m01-foundations/u02-ecosystem/l01-wallets-overview/lesson.html",
+                "access": "licensed",
+                "estimatedMinutes": 10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "m02-wallets",
+        "title": "Wallets y Seguridad",
+        "order": 2,
+        "access": "licensed",
+        "units": [
+          {
+            "id": "u01-wallet-types",
+            "title": "Tipos de Wallets",
+            "order": 1,
+            "lessons": [
+              {
+                "id": "l01-hot-vs-cold",
+                "title": "Hot vs Cold Wallets",
+                "order": 1,
+                "entry": "content/m02-wallets/u01-wallet-types/l01-hot-vs-cold/lesson.html",
+                "quiz": "content/m02-wallets/u01-wallet-types/l01-hot-vs-cold/quiz.json",
+                "access": "licensed",
+                "estimatedMinutes": 15
+              }
+            ]
+          }
+        ],
+        "quiz": "content/m02-wallets/module-quiz.json"
+      }
+    ]
+  },
+  "extras": [
+    {
+      "id": "glossary",
+      "title": "Glosario",
+      "type": "html",
+      "entry": "extras/glossary/index.html",
+      "roles": ["learner", "instructor"],
+      "order": 1
+    },
+    {
+      "id": "downloads",
+      "title": "Descargas",
+      "type": "files",
+      "entry": "extras/downloads/files",
+      "roles": ["learner", "instructor"],
+      "order": 2
+    },
+    {
+      "id": "links",
+      "title": "Enlaces útiles",
+      "type": "links",
+      "entry": "extras/links/links.json",
+      "roles": ["learner", "instructor"],
+      "order": 3
+    },
+    {
+      "id": "instructor-notes",
+      "title": "Notas del instructor",
+      "type": "html",
+      "entry": "instructor/dashboard.html",
+      "roles": ["instructor"],
+      "order": 4
+    }
+  ],
+  "instructor": {
+    "dashboard": "instructor/dashboard.html",
+    "notesRoot": "instructor/notes"
+  }
+}

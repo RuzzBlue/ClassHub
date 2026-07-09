@@ -1,0 +1,73 @@
+# ClassHub Course Bundle Specification v1.0
+
+## Package Structure
+
+```
+MyCourse/
+  course.json          # Required — source of truth
+  thumbnail.png        # Optional — library card image
+  cover.png            # Optional — cover image
+  assets/              # Shared assets (CSS, images)
+  content/             # Module/unit/lesson content
+    m01-module/
+      u01-unit/
+        l01-lesson/
+          lesson.html  # Single renderable lesson with sections
+          quiz.json    # Optional structured quiz
+          assets/      # Lesson-specific assets
+  extras/              # Optional course features
+  instructor/          # Instructor-only resources
+```
+
+## course.json
+
+The manifest defines metadata, navigation, access rules, extras, and instructor config.
+See `courses/crypto-101/course.json` for a complete example.
+
+### Required fields
+
+- `schemaVersion` — must be `"1.0"`
+- `id` — unique course identifier
+- `title`, `description`, `author`, `version`
+- `navigation.modules[]` — hierarchical content tree
+
+### Lesson HTML format
+
+Each lesson uses a single `lesson.html` with sections acting as slides:
+
+```html
+<section data-slide id="s1" data-title="Introduction">...</section>
+<section data-slide id="s2" data-title="Content">...</section>
+```
+
+### quiz.json format
+
+```json
+{
+  "id": "quiz-id",
+  "title": "Quiz Title",
+  "passingScore": 70,
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single",
+      "prompt": "Question text?",
+      "options": ["A", "B", "C"],
+      "correct": ["b"],
+      "explanation": "Optional explanation"
+    }
+  ]
+}
+```
+
+Option letters in `correct` are lowercase a, b, c... matching option index.
+
+## Access Policies
+
+- `free` — available to all users
+- `licensed` — requires valid license key
+- `instructor` — instructor role only
+
+## Import
+
+Bundles are distributed as `.zip` files. The app validates schema and file references before installing.

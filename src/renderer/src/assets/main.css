@@ -1,0 +1,108 @@
+@import 'tailwindcss';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+@theme {
+  --color-bg: #0f1117;
+  --color-surface: #1a1d27;
+  --color-surface2: #242836;
+  --color-border: #2e3348;
+  --color-text: #e8eaef;
+  --color-text-muted: #8b92a8;
+  --color-accent: #6c5ce7;
+  --color-accent-hover: #5b4bd4;
+  --color-success: #55efc4;
+  --color-warning: #fdcb6e;
+  --color-danger: #ff7675;
+}
+
+:root {
+  --accent: #6c5ce7;
+  --accent-hover: #5b4bd4;
+}
+
+[data-theme='light'] {
+  --color-bg: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-surface2: #eef0f5;
+  --color-border: #d8dce8;
+  --color-text: #1a1d27;
+  --color-text-muted: #6b7280;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: hidden;
+  height: 100vh;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all cursor-pointer inline-flex items-center gap-2;
+}
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-ghost {
+  @apply bg-transparent hover:bg-[var(--color-surface2)] text-[var(--color-text-muted)];
+}
+.btn-danger {
+  @apply bg-[var(--color-danger)] text-white;
+}
+
+.card {
+  @apply bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl;
+}
+
+.input {
+  @apply w-full px-3 py-2 rounded-lg bg-[var(--color-surface2)] border border-[var(--color-border)] text-[var(--color-text)] outline-none focus:border-[var(--accent)];
+}
+
+.lesson-section {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+.lesson-section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-enter {
+  animation: slideIn 0.35s ease;
+}

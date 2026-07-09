@@ -1,0 +1,14 @@
+{
+  "id": "m02-quiz",
+  "title": "Evaluación del Módulo — Wallets y Seguridad",
+  "passingScore": 70,
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single",
+      "prompt": "¿Qué tipo de wallet es MetaMask?",
+      "options": ["Cold wallet", "Hot wallet", "Paper wallet", "Hardware wallet"],
+      "correct": ["b"]
+    }
+  ]
+}

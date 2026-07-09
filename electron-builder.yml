@@ -1,0 +1,22 @@
+appId: com.classhub.app
+productName: ClassHub
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**/*
+  - courses/**/*
+extraResources:
+  - from: courses
+    to: courses
+    filter:
+      - "**/*"
+      - "!**/*.zip"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
