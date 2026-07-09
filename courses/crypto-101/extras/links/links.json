@@ -1,7 +1,0 @@
-{
-  "links": [
-    { "title": "Bitcoin Whitepaper", "url": "https://bitcoin.org/bitcoin.pdf", "description": "Documento original de Satoshi Nakamoto" },
-    { "title": "Ethereum.org", "url": "https://ethereum.org", "description": "Portal oficial de Ethereum" },
-    { "title": "CoinGecko", "url": "https://coingecko.com", "description": "Seguimiento de precios y datos de mercado" }
-  ]
-}

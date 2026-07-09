@@ -22,7 +22,7 @@ MyCourse/
 ## course.json
 
 The manifest defines metadata, navigation, access rules, extras, and instructor config.
-See `courses/crypto-101/course.json` for a complete example.
+Inspect any installed course's `course.json` after import for a complete example.
 
 ### Required fields
 

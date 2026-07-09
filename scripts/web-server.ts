@@ -1,7 +1,7 @@
 /**
- * Browser-mode server (Mac/Linux / classroom workflow).
+ * Browser-mode server for macOS, Linux, and optional Windows browser use.
  * Reuses the same API logic as the Electron main process.
- * Run: npm run build && npm run serve
+ * Run: npm run serve:full
  */
 import express from 'express'
 import cors from 'cors'
@@ -67,7 +67,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\nPort ${PORT} is already in use.`)
     console.error('Only one ClassHub server can run at a time.')
-    console.error('Stop the Python server (Ctrl+C) or another npm run serve, then retry.')
+    console.error('Stop the other server (Ctrl+C), then retry.')
     console.error('Windows: netstat -ano | findstr :8765   then   taskkill /PID <pid> /F\n')
     process.exit(1)
   }

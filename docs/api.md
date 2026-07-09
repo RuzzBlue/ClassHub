@@ -6,7 +6,6 @@ Base URL: `/api`
 
 - `GET /api/settings` — Get app settings
 - `PUT /api/settings` — Update settings
-- `POST /api/setup` — First-run setup
 
 ## Courses
 

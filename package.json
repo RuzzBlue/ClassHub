@@ -60,18 +60,7 @@
       "output": "release"
     },
     "files": [
-      "out/**/*",
-      "courses/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "courses",
-        "to": "courses",
-        "filter": [
-          "**/*",
-          "!**/*.zip"
-        ]
-      }
+      "out/**/*"
     ],
     "win": {
       "target": [
