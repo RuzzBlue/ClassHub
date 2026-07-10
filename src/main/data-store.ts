@@ -6,14 +6,12 @@ import type {
   CourseProgress,
   LessonProgress,
   License,
-  QuizResult,
-  User
+  QuizResult
 } from '@shared/types'
 import { DEFAULT_SETTINGS } from '@shared/types'
 import { getCoursesPath, getDataRoot } from './paths'
 
 interface ProgressData {
-  users: User[]
   courseProgress: CourseProgress[]
   lessonProgress: LessonProgress[]
   quizResults: QuizResult[]
@@ -21,7 +19,6 @@ interface ProgressData {
 }
 
 const EMPTY_PROGRESS: ProgressData = {
-  users: [],
   courseProgress: [],
   lessonProgress: [],
   quizResults: [],
@@ -46,7 +43,6 @@ export class DataStore {
     this.progressPath = join(this.dataRoot, 'progress.json')
     getCoursesPath()
     this.loadProgress()
-    this.seedDefaultUser()
     this.ensureSettings()
     this.initialized = true
   }
@@ -79,26 +75,6 @@ export class DataStore {
 
   private saveProgress(): void {
     writeFileSync(this.progressPath, JSON.stringify(this.progress, null, 2))
-  }
-
-  private seedDefaultUser(): void {
-    const demo = this.progress.users.find((u) => u.id === 'user-demo')
-    if (!demo) {
-      this.createUser({
-        id: 'user-demo',
-        displayName: 'Demo Learner',
-        email: 'demo@classhub.local',
-        passwordHash: hashPassword('demo123'),
-        role: 'learner',
-        avatar: null,
-        prefs: {},
-        createdAt: new Date().toISOString()
-      })
-    } else if (!demo.email) {
-      demo.email = 'demo@classhub.local'
-      if (!demo.passwordHash) demo.passwordHash = hashPassword('demo123')
-      this.saveProgress()
-    }
   }
 
   getSettings(): AppSettings {
@@ -137,52 +113,6 @@ export class DataStore {
 
   saveRegistry(registry: { courses: Array<{ id: string; path: string; installedAt: string; version: string }> }): void {
     writeFileSync(join(this.dataRoot, 'registry.json'), JSON.stringify(registry, null, 2))
-  }
-
-  getUsers(): User[] {
-    return this.progress.users.map((u) => ({ ...u, passwordHash: undefined })) as User[]
-  }
-
-  getUser(id: string): User | null {
-    const user = this.progress.users.find((u) => u.id === id)
-    if (!user) return null
-    const { passwordHash: _, ...safe } = user
-    return safe as User
-  }
-
-  getUserByEmail(email: string): (User & { passwordHash?: string }) | null {
-    return this.progress.users.find((u) => u.email?.toLowerCase() === email.toLowerCase()) ?? null
-  }
-
-  createUser(user: User & { passwordHash?: string }): User {
-    const idx = this.progress.users.findIndex((u) => u.id === user.id)
-    if (idx >= 0) this.progress.users[idx] = user
-    else this.progress.users.push(user)
-    this.saveProgress()
-    const { passwordHash: _, ...safe } = user
-    return safe as User
-  }
-
-  updateUser(id: string, updates: Partial<User & { passwordHash?: string }>): User | null {
-    const user = this.progress.users.find((u) => u.id === id)
-    if (!user) return null
-    const updated = { ...user, ...updates, id }
-    if (!updates.email?.trim()) {
-      updated.email = user.email
-    }
-    this.createUser(updated)
-    return this.getUser(id)
-  }
-
-  authenticate(email: string, password: string): User | null {
-    const user = this.getUserByEmail(email)
-    if (!user?.passwordHash) return null
-    if (user.passwordHash !== hashPassword(password)) return null
-    const settings = this.getSettings()
-    settings.activeUserId = user.id
-    this.saveSettings(settings)
-    const { passwordHash: _, ...safe } = user
-    return safe as User
   }
 
   logout(): void {

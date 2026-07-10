@@ -94,7 +94,7 @@ export function CoursePage(): React.JSX.Element {
           <i className={`fas ${sidebarOpen ? 'fa-indent' : 'fa-outdent'}`} />
         </button>
         <h1 className="font-semibold truncate flex-1">{manifest.title}</h1>
-        {user?.role === 'instructor' && (
+        {(user?.role === 'instructor' || user?.role === 'admin') && (
           <button className="btn btn-ghost text-sm" onClick={handlePresenter}>
             <i className="fas fa-chalkboard-teacher" /> {t('course.presenter')}
           </button>

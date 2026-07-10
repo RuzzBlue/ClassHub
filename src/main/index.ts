@@ -14,12 +14,14 @@ protocol.registerSchemesAsPrivileged([
   }
 ])
 
+import './env'
 import { app, shell, BrowserWindow, ipcMain, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { handleApiRequest, selectFile, selectSaveFile, setPresenterCallback } from './api-router'
 import { dataStore } from './data-store'
+import { initDatabase } from './db/migrate'
 import { syncCourseRegistry } from './bundle-service'
 import { resolveAssetPath } from './bundle-service'
 import { buildAppMenu } from './menu'
@@ -112,8 +114,9 @@ function initDataStore(): void {
   syncCourseRegistry()
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.classhub.app')
+  await initDatabase()
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })

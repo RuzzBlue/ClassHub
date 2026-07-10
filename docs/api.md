@@ -2,6 +2,21 @@
 
 Base URL: `/api`
 
+## Auth (Neon PostgreSQL)
+
+- `POST /api/auth/login` — `{ email, password }`
+- `POST /api/auth/logout`
+- `GET /api/auth/me` — Current user
+
+## Admin (requires admin role)
+
+- `GET/POST/PUT/DELETE /api/admin/groups`
+- `GET/POST/PUT/DELETE /api/admin/license-types`
+- `GET /api/admin/users?role=admin|instructor|learner&groupId=` — List users
+- `POST /api/admin/users` — Create user
+- `PUT/DELETE /api/admin/users/:id`
+- `GET/POST/DELETE /api/admin/enrollments` — Course ↔ instructor ↔ learner links
+
 ## Settings
 
 - `GET /api/settings` — Get app settings
@@ -12,7 +27,7 @@ Base URL: `/api`
 - `GET /api/courses` — List installed courses (auto-syncs `courses/` folder)
 - `POST /api/courses/sync` — Rescan `courses/` and refresh registry
 - `POST /api/courses/import` — Import zip bundle (`zipPath` or base64 `content`)
-- `POST /api/courses/:id/export` — Export course to zip (`savePath` or base64 download)
+- `POST /api/courses/:id/export` — Export course to zip
 - `DELETE /api/courses/:id` — Remove course
 - `GET /api/courses/:id/manifest` — Get course.json
 - `GET /api/courses/:id/asset?path=` — Get bundle file (base64)
@@ -27,11 +42,9 @@ Base URL: `/api`
 - `GET /api/quiz/:courseId?path=` — Get quiz (answers stripped)
 - `POST /api/quiz/submit` — Submit answers
 
-## Users
+## Users (self-service profile)
 
-- `GET /api/users` — List users
-- `POST /api/users` — Create/switch user
-- `PUT /api/users/:id` — Update user
+- `PUT /api/users/:id` — Update own profile (display name, email, password)
 
 ## Access
 

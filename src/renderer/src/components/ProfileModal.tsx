@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
@@ -14,6 +15,7 @@ type Tab = 'profile' | 'app' | 'role'
 
 export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const { settings, user, updateSettings, loadUser, logout } = useAppStore()
   const [tab, setTab] = useState<Tab>('profile')
   const [displayName, setDisplayName] = useState('')
@@ -80,10 +82,10 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
     onClose()
   }
 
-  const tabs: { id: Tab; label: string; icon: string; disabled?: boolean }[] = [
+  const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'profile', label: t('settings.profile'), icon: 'fa-user' },
     { id: 'app', label: t('settings.appSettings'), icon: 'fa-palette' },
-    { id: 'role', label: t('settings.role'), icon: 'fa-user-tag', disabled: true }
+    { id: 'role', label: t('settings.role'), icon: 'fa-user-tag' }
   ]
 
   return (
@@ -111,15 +113,13 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
           {tabs.map((titem) => (
             <button
               key={titem.id}
+              type="button"
               className={cn(
                 'flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1',
-                tab === titem.id && 'border-b-2',
-                titem.disabled && 'opacity-40 cursor-not-allowed'
+                tab === titem.id && 'border-b-2'
               )}
               style={tab === titem.id ? { borderColor: 'var(--accent)' } : {}}
-              onClick={() => !titem.disabled && setTab(titem.id)}
-              disabled={titem.disabled}
-              title={titem.disabled ? t('settings.comingSoon') : undefined}
+              onClick={() => setTab(titem.id)}
             >
               <i className={`fas ${titem.icon}`} />
               {titem.label}
@@ -199,6 +199,47 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
               <button className="btn btn-primary w-full justify-center" onClick={handleSaveApp}>
                 {t('settings.save')}
               </button>
+            </>
+          )}
+
+          {tab === 'role' && user && (
+            <>
+              <div className="card p-4 bg-[var(--color-surface2)]">
+                <p className="text-sm text-[var(--color-text-muted)]">{t('settings.role')}</p>
+                <p className="font-semibold capitalize">{user.role}</p>
+                <p className="text-sm text-[var(--color-text-muted)] mt-2">{t('admin.status')}</p>
+                <p className="capitalize">{user.status}</p>
+                {user.groupName && (
+                  <>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-2">{t('admin.group')}</p>
+                    <p>{user.groupName}</p>
+                  </>
+                )}
+              </div>
+              {(user.role === 'instructor' || user.role === 'admin') && (
+                <button
+                  type="button"
+                  className="btn btn-primary w-full justify-center"
+                  onClick={() => {
+                    onClose()
+                    navigate('/instructor')
+                  }}
+                >
+                  <i className="fas fa-chalkboard-teacher" /> {t('roles.instructorArea')}
+                </button>
+              )}
+              {(user.role === 'learner' || user.role === 'admin') && (
+                <button
+                  type="button"
+                  className="btn btn-ghost w-full justify-center border border-[var(--color-border)]"
+                  onClick={() => {
+                    onClose()
+                    navigate('/learner-hub')
+                  }}
+                >
+                  <i className="fas fa-user-graduate" /> {t('roles.studentHub')}
+                </button>
+              )}
             </>
           )}
 

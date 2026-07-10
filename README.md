@@ -7,10 +7,11 @@ Desktop course runtime and package manager for installable Course Bundles.
 - Import `.zip` Course Bundles into a local `courses/` folder
 - **Sync Courses** — rescan `courses/` for manually added course folders
 - **Export Course** — save an installed course back to `.zip`
+- **Neon PostgreSQL** — cloud user accounts (admin, instructor, learner)
+- **Admin Dashboard** — manage groups, license types, users, and course enrollments
 - Course library with filterable cards and progress tracking
 - Module → Unit → Lesson navigation with slide-like sections
 - Quiz engine, bilingual UI (EN/ES), theme customization
-- Login with test account; profile modal for settings
 
 ---
 
@@ -18,14 +19,26 @@ Desktop course runtime and package manager for installable Course Bundles.
 
 - **Node.js 20+** (LTS recommended)
 - **npm**
-
-Clone the repo, then from the project root:
+- **Neon PostgreSQL** database ([neon.tech](https://neon.tech)) for login and user management
 
 ```bash
 npm install --legacy-peer-deps
+cp .env.example .env
 ```
 
-**Demo login:** `demo@classhub.local` / `demo123`
+Edit `.env` and set your **Neon pooler** connection string:
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@ep-PROJECT-pooler.region.aws.neon.tech/neondb?sslmode=require
+CLASSHUB_SEED_ADMIN_EMAIL=admin@classhub.local
+CLASSHUB_SEED_ADMIN_PASSWORD=changeme
+```
+
+On first startup (empty database), ClassHub creates tables and seeds the admin user above.
+
+**First login:** use `CLASSHUB_SEED_ADMIN_EMAIL` / `CLASSHUB_SEED_ADMIN_PASSWORD`
+
+Neon scale-to-zero may add ~1–2 seconds on the first query after idle — normal for small teams.
 
 ---
 
@@ -35,31 +48,37 @@ npm install --legacy-peer-deps
 npm run dev
 ```
 
-Opens the ClassHub Electron window. Courses live in `courses/` next to the project. User data (progress, settings, login) in `data/`.
+Opens the ClassHub Electron window. Courses live in `courses/` next to the project. Local progress/settings in `data/`.
 
-### Windows — browser app (same machine)
+### Windows — browser app
 
 ```bash
 npm run serve:full
 ```
 
 Open **http://localhost:8765**
-
-Use this to test the Mac/Linux workflow on Windows, or if you prefer running in a browser.
 
 ---
 
 ## macOS / Linux — browser app
 
-ClassHub runs as a local web server. There is no separate desktop build for these platforms yet.
-
 ```bash
 npm run serve:full
 ```
 
 Open **http://localhost:8765**
 
-The server uses the same backend as the Windows desktop app. Courses go in `courses/`; progress and settings in `data/`.
+---
+
+## Roles
+
+| Role | Access |
+|------|--------|
+| **Admin** | Library + **Admin Dashboard** (users, groups, licenses, enrollments) |
+| **Instructor** | Library + **Instructor Area** (placeholder) |
+| **Learner** | Library + **Student Hub** (placeholder) |
+
+Admins see **Instructor Area** and **Student Hub** buttons in Profile → Role for testing.
 
 ---
 
@@ -71,23 +90,13 @@ npm run build:win
 
 Output: `release/`
 
-Installed courses are not bundled — add them via **Import Course** or copy folders into `courses/` and **Sync Courses**.
-
 ---
 
 ## Courses folder
 
 The `courses/` directory is **not tracked in git**. Each user keeps their own courses locally.
 
-- On first run, ClassHub creates `courses/` automatically if it does not exist.
-- Each course is a folder with a `course.json` at its root (e.g. `courses/my-course/course.json`).
-- If you copy course folders manually, use **Import Course ▾ → Sync Courses** in the library.
-
-| Action | How |
-|--------|-----|
-| **Import Course** | Header button — pick a `.zip` bundle |
-| **Sync Courses** | Import Course ▾ → rescan `courses/` |
-| **Export Course** | Import Course ▾ → pick course → save `.zip` |
+- Use **Import Course ▾ → Sync Courses** after copying folders into `courses/`.
 
 ---
 
@@ -95,25 +104,15 @@ The `courses/` directory is **not tracked in git**. Each user keeps their own co
 
 Only one server can use port **8765**. Stop any running ClassHub server (Ctrl+C), then:
 
-**Windows:**
+**Windows:** `netstat -ano | findstr :8765` then `taskkill /PID <pid> /F`
 
-```powershell
-netstat -ano | findstr :8765
-taskkill /PID <pid> /F
-```
-
-**macOS / Linux:**
-
-```bash
-lsof -i :8765
-kill <pid>
-```
+**macOS / Linux:** `lsof -i :8765` then `kill <pid>`
 
 ---
 
 ## Demo license key
 
-`CLASSHUB-DEMO-2026` (for locked course content)
+`CLASSHUB-DEMO-2026` (for locked course content in course bundles)
 
 ---
 

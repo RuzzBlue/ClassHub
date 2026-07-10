@@ -29,11 +29,42 @@ export interface CourseRegistry {
 export interface User {
   id: string
   displayName: string
-  email?: string
-  passwordHash?: string
-  role: 'learner' | 'instructor'
+  email: string
+  role: UserRole
+  status: UserStatus
+  groupId: string | null
+  groupName?: string | null
+  licenseTypeId: string | null
+  licenseTypeName?: string | null
   avatar: string | null
   prefs: Record<string, unknown>
+  createdAt: string
+}
+
+export type UserRole = 'admin' | 'instructor' | 'learner'
+export type UserStatus = 'paid' | 'active' | 'unpaid' | 'deactivated'
+
+export interface Group {
+  id: string
+  name: string
+  description: string | null
+  createdAt: string
+}
+
+export interface LicenseType {
+  id: string
+  name: string
+  description: string | null
+  createdAt: string
+}
+
+export interface CourseEnrollment {
+  id: string
+  courseId: string
+  instructorId: string
+  instructorName: string
+  learnerId: string
+  learnerName: string
   createdAt: string
 }
 

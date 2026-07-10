@@ -8,6 +8,7 @@ import {
   type CourseManifest
 } from '@shared/schemas'
 import { dataStore } from './data-store'
+import { getUserById } from './db/users'
 import { getManifest, resolveAssetPath } from './bundle-service'
 import type {
   CourseProgress,
@@ -141,21 +142,21 @@ export function getGradeSummaries(userId: string, courseId: string): GradeSummar
   return summaries
 }
 
-export function canAccess(
+export async function canAccess(
   userId: string,
   courseId: string,
   targetType: 'module' | 'unit' | 'lesson',
   targetId: string,
   nodeAccess?: string
-): boolean {
+): Promise<boolean> {
   const manifest = getManifest(courseId)
   if (!manifest) return false
-  const user = dataStore.getUser(userId)
+  const user = await getUserById(userId)
   if (!user) return false
-  if (user.role === 'instructor') return true
+  if (user.role === 'instructor' || user.role === 'admin') return true
   const policy = resolveAccess(manifest, targetType, targetId, nodeAccess as 'free' | 'licensed' | 'instructor' | undefined)
   if (policy === 'free') return true
-  if (policy === 'instructor') return user.role === 'instructor'
+  if (policy === 'instructor') return user.role === 'instructor' || user.role === 'admin'
   if (policy === 'licensed') {
     const license = dataStore.getLicense(userId, courseId)
     return license?.status === 'valid'

@@ -12,7 +12,7 @@ interface Props {
 export function LoginModal({ open, onClose }: Props): React.JSX.Element | null {
   const { t } = useTranslation()
   const { loadUser } = useAppStore()
-  const [email, setEmail] = useState('demo@classhub.local')
+  const [email, setEmail] = useState('admin@classhub.local')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

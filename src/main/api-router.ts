@@ -1,11 +1,13 @@
-import { dialog, app } from 'electron'
+import { dialog } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync } from 'fs'
-import { nanoid } from 'nanoid'
 import type { ApiRequest, ApiResponse } from '@shared/api'
 import type { AppSettings } from '@shared/types'
 import { DEFAULT_SETTINGS } from '@shared/types'
-import { dataStore, hashPassword } from './data-store'
+import { handleAdminRequest } from './admin-router'
+import { dataStore } from './data-store'
+import { getDatabaseUrl } from './db/pool'
+import { authenticateUser, getUserById, updateUser } from './db/users'
 import { getStagingPath } from './paths'
 import {
   importBundle,
@@ -38,6 +40,9 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
   try {
     const { method, path, body, params } = req
 
+    const adminResponse = await handleAdminRequest(req)
+    if (adminResponse) return adminResponse
+
     if (method === 'GET' && path === '/api/settings') {
       return ok(dataStore.getSettings())
     }
@@ -49,9 +54,13 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
     }
 
     if (method === 'POST' && path === '/api/auth/login') {
+      if (!getDatabaseUrl()) return err('Database not configured. Add DATABASE_URL to .env', 503)
       const { email, password } = body as { email: string; password: string }
-      const user = dataStore.authenticate(email, password)
+      const user = await authenticateUser(email, password)
       if (!user) return err('Invalid email or password', 401)
+      const settings = dataStore.getSettings()
+      settings.activeUserId = user.id
+      dataStore.saveSettings(settings)
       return ok({ user })
     }
 
@@ -63,7 +72,9 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
     if (method === 'GET' && path === '/api/auth/me') {
       const settings = dataStore.getSettings()
       if (!settings.activeUserId) return ok({ user: null })
-      return ok({ user: dataStore.getUser(settings.activeUserId) })
+      if (!getDatabaseUrl()) return ok({ user: null })
+      const user = await getUserById(settings.activeUserId)
+      return ok({ user })
     }
 
     if (method === 'GET' && path === '/api/courses') {
@@ -215,47 +226,21 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
       return ok(sanitized)
     }
 
-    if (method === 'GET' && path === '/api/users') {
-      return ok(dataStore.getUsers())
-    }
-
-    if (method === 'POST' && path === '/api/users') {
-      const { displayName, role, switchTo } = body as {
-        displayName?: string
-        role?: 'learner' | 'instructor'
-        switchTo?: string
-      }
-      if (switchTo) {
-        const settings = dataStore.getSettings()
-        settings.activeUserId = switchTo
-        dataStore.saveSettings(settings)
-        return ok(dataStore.getUser(switchTo))
-      }
-      const user = dataStore.createUser({
-        id: nanoid(),
-        displayName: displayName || 'User',
-        role: role || 'learner',
-        avatar: null,
-        prefs: {},
-        createdAt: new Date().toISOString()
-      })
-      const settings = dataStore.getSettings()
-      settings.activeUserId = user.id
-      dataStore.saveSettings(settings)
-      return ok(user)
-    }
-
     if (method === 'PUT' && path.startsWith('/api/users/')) {
+      if (!getDatabaseUrl()) return err('Database not configured', 503)
       const userId = path.split('/').pop()!
-      const updates = body as Partial<{ displayName: string; role: string; email: string; password: string }>
-      const patch: Record<string, unknown> = {}
-      if (updates.displayName !== undefined) patch.displayName = updates.displayName
-      if (updates.role !== undefined) patch.role = updates.role
-      if (updates.email?.trim()) patch.email = updates.email.trim()
-      if (updates.password) {
-        patch.passwordHash = hashPassword(updates.password)
+      const settings = dataStore.getSettings()
+      if (!settings.activeUserId) return err('Login required', 401)
+      if (settings.activeUserId !== userId) {
+        const actor = await getUserById(settings.activeUserId)
+        if (actor?.role !== 'admin') return err('Forbidden', 403)
       }
-      const updated = dataStore.updateUser(userId, patch)
+      const updates = body as Partial<{ displayName: string; email: string; password: string }>
+      const updated = await updateUser(userId, {
+        displayName: updates.displayName,
+        email: updates.email,
+        password: updates.password
+      })
       if (!updated) return err('User not found', 404)
       return ok(updated)
     }
@@ -265,7 +250,7 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
       const settings = dataStore.getSettings()
       const userId = settings.activeUserId || 'guest'
       const { targetType, targetId, nodeAccess } = params || {}
-      const allowed = canAccess(
+      const allowed = await canAccess(
         userId,
         courseId,
         (targetType as 'module' | 'unit' | 'lesson') || 'lesson',

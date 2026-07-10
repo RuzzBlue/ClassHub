@@ -4,6 +4,9 @@ import { useAppStore } from './stores/app-store'
 import { LibraryPage } from './pages/LibraryPage'
 import { CoursePage } from './pages/CoursePage'
 import { PresenterPage } from './pages/PresenterPage'
+import { AdminPage } from './pages/AdminPage'
+import { InstructorAreaPage } from './pages/InstructorAreaPage'
+import { LearnerHubPage } from './pages/LearnerHubPage'
 import { importCourse } from './lib/course-actions'
 
 function MenuListener(): null {
@@ -46,6 +49,9 @@ export default function App(): React.JSX.Element {
       <MenuListener />
       <Routes>
         <Route path="/" element={<LibraryPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/instructor" element={<InstructorAreaPage />} />
+        <Route path="/learner-hub" element={<LearnerHubPage />} />
         <Route path="/course/:courseId" element={<CoursePage />} />
         <Route path="/presenter/:courseId/:lessonId/:sectionId" element={<PresenterPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
