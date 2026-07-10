@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { createHash } from 'crypto'
 import { getDatabaseUrl, query, queryOne } from './pool'
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AppLayout } from '../components/AppLayout'
 import { EditableDataTable } from '../components/admin/EditableDataTable'
 import { FilterableSelect } from '../components/admin/FilterableSelect'
+import { LicenseKeyCell } from '../components/admin/LicenseKeyCell'
 import { apiFetch } from '../lib/api-client'
 import { downloadLicenseCertificate } from '../lib/license-export'
 import { useAppStore } from '../stores/app-store'
@@ -25,7 +26,6 @@ type AdminSection =
   | 'users-learners'
   | 'relationships'
 
-const MASKED_LICENSE_KEY = '••••••••••••'
 
 const STATUSES: UserStatus[] = ['paid', 'active', 'unpaid', 'deactivated']
 const LICENSE_STATUSES = ['active', 'inactive'] as const
@@ -48,6 +48,7 @@ export function AdminPage(): React.JSX.Element {
   const [genLicenseTypeId, setGenLicenseTypeId] = useState('')
   const [genExpiresAt, setGenExpiresAt] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [visibleLicenseIds, setVisibleLicenseIds] = useState<Set<string>>(new Set())
 
   const loadGroups = useCallback(async () => {
     const res = await apiFetch<Group[]>({ method: 'GET', path: '/api/admin/groups' })
@@ -167,6 +168,15 @@ export function AdminPage(): React.JSX.Element {
     } else setMessage(res.error || t('admin.error'))
   }
 
+  const toggleLicenseVisibility = (id: string): void => {
+    setVisibleLicenseIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const handleCreateUser = async (form: FormData): Promise<void> => {
     const role = roleForSection()
     if (!role) return
@@ -220,7 +230,7 @@ export function AdminPage(): React.JSX.Element {
   ]
 
   return (
-    <AppLayout showImport={false}>
+    <AppLayout>
       <div className="flex flex-1 min-h-0">
         <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 overflow-auto">
           <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)] px-2 mb-2">
@@ -368,20 +378,24 @@ export function AdminPage(): React.JSX.Element {
                     key: 'code',
                     label: t('admin.licenseKey'),
                     editable: true,
-                    getValue: () => MASKED_LICENSE_KEY,
-                    render: () => (
-                      <span className="font-mono text-xs tracking-widest text-[var(--color-text-muted)]">
-                        {MASKED_LICENSE_KEY}
-                      </span>
+                    getValue: (r) => r.code,
+                    render: (r) => (
+                      <LicenseKeyCell
+                        code={r.code}
+                        visible={visibleLicenseIds.has(r.id)}
+                        onToggle={() => toggleLicenseVisibility(r.id)}
+                      />
                     ),
                     renderEdit: (row) => (
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs tracking-widest text-[var(--color-text-muted)]">
-                          {MASKED_LICENSE_KEY}
-                        </span>
+                      <div className="flex flex-col gap-2">
+                        <LicenseKeyCell
+                          code={row.code}
+                          visible={visibleLicenseIds.has(row.id)}
+                          onToggle={() => toggleLicenseVisibility(row.id)}
+                        />
                         <button
                           type="button"
-                          className="btn btn-ghost text-xs px-2 cursor-pointer whitespace-nowrap"
+                          className="btn btn-ghost text-xs px-2 cursor-pointer whitespace-nowrap self-start"
                           onClick={() => void handleRegenerateLicense(row.id)}
                         >
                           <i className="fas fa-rotate" /> {t('admin.regenerateLicense')}

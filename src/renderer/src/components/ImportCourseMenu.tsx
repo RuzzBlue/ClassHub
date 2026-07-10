@@ -61,8 +61,8 @@ export function ImportCourseMenu({
 
   return (
     <>
-      <div className="relative inline-flex" ref={menuRef}>
-        <div className={`inline-flex rounded-lg overflow-hidden border border-[var(--color-border)] ${compact ? '' : ''}`}>
+      <div className="relative inline-flex shrink-0" ref={menuRef}>
+        <div className="inline-flex rounded-lg overflow-hidden border border-[var(--color-border)]">
           <button
             type="button"
             className={`btn btn-ghost text-sm rounded-none border-0 ${compact ? 'px-3 py-2' : ''}`}
@@ -84,10 +84,10 @@ export function ImportCourseMenu({
         </div>
 
         {open && (
-          <div className="absolute top-full left-0 mt-1 min-w-[220px] z-50 card py-1 shadow-lg">
+          <div className="header-dropdown">
             <button
               type="button"
-              className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface2)] flex items-center gap-2"
+              className="header-dropdown-item"
               onClick={handleSync}
             >
               <i className="fas fa-arrows-rotate w-4" />
@@ -95,7 +95,7 @@ export function ImportCourseMenu({
             </button>
             <button
               type="button"
-              className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface2)] flex items-center gap-2"
+              className="header-dropdown-item"
               onClick={handleExportOpen}
               disabled={courses.length === 0}
             >

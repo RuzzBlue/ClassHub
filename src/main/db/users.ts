@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import type { User, UserRole, UserStatus } from '@shared/types'
 import { hashLicenseKey } from './migrate'
 import { query, queryOne } from './pool'

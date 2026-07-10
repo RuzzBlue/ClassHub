@@ -1,4 +1,4 @@
-import './env'
+import '../src/main/env'
 import express from 'express'
 import cors from 'cors'
 import { join } from 'path'

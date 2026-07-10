@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
 import { ImportCourseMenu } from './ImportCourseMenu'
-import { RoleViewsMenu } from './RoleViewsMenu'
+import { AdminDashboardMenu } from './AdminDashboardMenu'
 import type { CourseCardData } from '@shared/types'
 
 interface AppHeaderProps {
@@ -28,19 +28,18 @@ export function AppHeader({
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAppStore()
-  const onAdmin = location.pathname.startsWith('/admin')
   const onInstructor = location.pathname.startsWith('/instructor')
   const onLearner = location.pathname.startsWith('/learner-hub')
   const onLibrary = location.pathname === '/'
 
   return (
-    <header className="flex items-center gap-4 px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0 flex-nowrap">
+    <header className="flex items-center gap-4 px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0 flex-nowrap relative z-40 overflow-visible">
       <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
         <i className="fas fa-graduation-cap text-xl" style={{ color: 'var(--accent)' }} />
         <span className="font-bold text-lg">{t('app.name')}</span>
       </div>
 
-      <nav className="flex gap-1 ml-2 items-center min-w-0 overflow-x-auto">
+      <nav className="flex gap-1 ml-2 items-center shrink-0 overflow-visible">
         <button
           type="button"
           className={`btn btn-ghost text-sm ${onLibrary ? 'bg-[var(--color-surface2)]' : ''}`}
@@ -49,17 +48,7 @@ export function AppHeader({
           <i className="fas fa-th-large" /> {t('nav.library')}
         </button>
 
-        {user?.role === 'admin' && (
-          <button
-            type="button"
-            className={`btn btn-ghost text-sm ${onAdmin ? 'bg-[var(--color-surface2)]' : ''}`}
-            onClick={() => navigate('/admin')}
-          >
-            <i className="fas fa-shield-halved" /> {t('nav.adminDashboard')}
-          </button>
-        )}
-
-        {user?.role === 'admin' && <RoleViewsMenu />}
+        {user?.role === 'admin' && <AdminDashboardMenu />}
 
         {user?.role === 'instructor' && (
           <button
@@ -81,7 +70,7 @@ export function AppHeader({
           </button>
         )}
 
-        {showImport && !onAdmin && (
+        {showImport && (
           <ImportCourseMenu courses={courses} onCoursesChange={onCoursesChange} />
         )}
       </nav>
