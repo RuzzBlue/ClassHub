@@ -12,7 +12,7 @@ Base URL: `/api`
 
 - `GET/POST/PUT/DELETE /api/admin/groups`
 - `GET/POST/PUT/DELETE /api/admin/license-types`
-- `GET /api/admin/users?role=admin|instructor|learner&groupId=` — List users
+- `GET /api/admin/users?role=admin|instructor|student&groupId=` — List users
 - `POST /api/admin/users` — Create user
 - `PUT/DELETE /api/admin/users/:id`
 - `GET/POST/DELETE /api/admin/enrollments` — Course ↔ instructor ↔ learner links

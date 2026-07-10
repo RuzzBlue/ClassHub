@@ -23,10 +23,15 @@ async function main(): Promise<void> {
   app.use(cors())
   app.use(express.json({ limit: '50mb' }))
 
-  app.all('/api/*', async (req, res) => {
+  app.use(async (req, res, next) => {
+    if (!req.path.startsWith('/api/')) return next()
     try {
-      const path = req.originalUrl.split('?')[0]
+      const path = req.path
       const params: Record<string, string> = {}
+      const url = new URL(req.originalUrl, 'http://localhost')
+      url.searchParams.forEach((value, key) => {
+        params[key] = value
+      })
       for (const [k, v] of Object.entries(req.query)) {
         if (typeof v === 'string') params[k] = v
       }
@@ -48,7 +53,14 @@ async function main(): Promise<void> {
     }
   })
 
-  app.use(express.static(STATIC_DIR))
+  app.use(express.static(STATIC_DIR, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.woff2') || filePath.endsWith('.ttf')) {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+      }
+    }
+  }))
 
   app.get(/^(?!\/api).*/, (_req, res) => {
     const index = join(STATIC_DIR, 'index.html')

@@ -59,7 +59,7 @@ export function CollapsibleSidebar({
             } ${activeId === item.id ? 'bg-[var(--color-surface2)]' : 'hover:bg-[var(--color-surface2)]'}`}
             onClick={() => onSelect(item.id)}
           >
-            <i className={`fas ${item.icon} w-4 shrink-0 text-center`} />
+            <i className={`fas ${item.icon} sidebar-nav-icon`} aria-hidden="true" />
             {!collapsed && <span className="truncate">{item.label}</span>}
           </button>
         ))}

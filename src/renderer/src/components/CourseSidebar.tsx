@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CourseManifest } from '@shared/schemas'
 import type { ProgressSnapshot } from '@shared/types'
@@ -5,7 +6,7 @@ import { useAppStore } from '../stores/app-store'
 import { useCourseStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
 import { courseRoleForUser } from '../lib/role-label'
-import { getInstructorViews, getStudentViews } from '../lib/course-views'
+import { getRoleViewsForUser } from '../lib/course-views'
 import { cn } from '../lib/utils'
 import { CourseProgressWidget } from './course/CourseProgressWidget'
 import { CourseCurriculumOverview } from './course/CourseCurriculumOverview'
@@ -31,10 +32,16 @@ export function CourseSidebar({
   const { user } = useAppStore()
 
   const courseRole = courseRoleForUser(user?.role)
-  const instructorViews =
-    user?.role === 'instructor' || user?.role === 'admin' ? getInstructorViews(manifest) : []
-  const studentViews = user?.role === 'student' || user?.role === 'admin' ? getStudentViews(manifest) : []
-  const roleViews = [...instructorViews, ...studentViews]
+  const roleViews = getRoleViewsForUser(manifest, user)
+
+  // If auth finishes after course load, ensure a menu view is selected on the Menu tab.
+  useEffect(() => {
+    if (activeTab !== 'menu') return
+    if (roleViews.length === 0) return
+    if (!selectedMenuId) {
+      selectRoleView(roleViews[0])
+    }
+  }, [activeTab, manifest.id, user?.id, user?.role, selectedMenuId, roleViews.length, selectRoleView])
 
   const extras = manifest.extras
     .filter((e) => user?.role === 'admin' || e.roles.includes(courseRole))
@@ -91,25 +98,25 @@ export function CourseSidebar({
 
       {activeTab === 'menu' ? (
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="p-3 border-b border-[var(--color-border)]">
+          <div className="p-3 border-b border-[var(--color-border)] shrink-0">
             <CourseProgressWidget manifest={manifest} progress={progress} />
           </div>
 
           <div className="flex-1 overflow-auto p-2 space-y-1 min-h-0">
             {roleViews.map((view) => (
-                <button
-                  key={view.id}
-                  type="button"
-                  className={cn(
-                    'course-sidebar-menu-item',
-                    selectedMenuId === view.id && 'course-sidebar-menu-item-active'
-                  )}
-                  onClick={() => selectRoleView(view)}
-                >
-                  <i className={`fas ${view.icon} course-sidebar-menu-icon`} />
-                  <span className="truncate">{view.title}</span>
-                </button>
-              ))}
+              <button
+                key={view.id}
+                type="button"
+                className={cn(
+                  'course-sidebar-menu-item',
+                  selectedMenuId === view.id && 'course-sidebar-menu-item-active'
+                )}
+                onClick={() => selectRoleView(view)}
+              >
+                  <i className={`fas ${view.icon} course-sidebar-menu-icon`} aria-hidden="true" />
+                <span className="truncate">{view.title}</span>
+              </button>
+            ))}
           </div>
 
           {extras.length > 0 && (
@@ -126,7 +133,7 @@ export function CourseSidebar({
                     )}
                     onClick={() => selectExtra(extra)}
                   >
-                    <i className={`fas ${extra.icon} course-sidebar-menu-icon`} />
+                    <i className={`fas ${extra.icon} course-sidebar-menu-icon`} aria-hidden="true" />
                     <span className="truncate">{extra.title}</span>
                   </button>
                 ))}
@@ -135,13 +142,18 @@ export function CourseSidebar({
           )}
         </div>
       ) : (
-        <CourseCurriculumOverview
-          manifest={manifest}
-          currentLessonId={currentLessonId}
-          accessMap={accessMap}
-          getLessonStatus={getLessonStatus}
-          onSelectLesson={onSelectLesson}
-        />
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="p-3 border-b border-[var(--color-border)] shrink-0">
+            <CourseProgressWidget manifest={manifest} progress={progress} />
+          </div>
+          <CourseCurriculumOverview
+            manifest={manifest}
+            currentLessonId={currentLessonId}
+            accessMap={accessMap}
+            getLessonStatus={getLessonStatus}
+            onSelectLesson={onSelectLesson}
+          />
+        </div>
       )}
     </aside>
   )

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { AppSettings, CourseCardData, User } from '@shared/types'
 import type { CourseManifest, Extra, CourseView } from '@shared/schemas'
+import { getOrderedLessons } from '@shared/schemas'
 import type { ProgressSnapshot } from '@shared/types'
 import { apiFetch } from '../lib/api-client'
 import { applyTheme } from '../lib/utils'
@@ -80,7 +81,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   }
 }))
 
-import { getInstructorViews, getStudentViews } from '../lib/course-views'
+import { getDefaultRoleView, getRoleViewsForUser } from '../lib/course-views'
 
 export type CourseContentView =
   | { kind: 'lesson' }
@@ -144,13 +145,9 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       })
 
       const user = useAppStore.getState().user
-      const instructorViews =
-        user?.role === 'instructor' || user?.role === 'admin' ? getInstructorViews(manifest) : []
-      const studentViews =
-        user?.role === 'student' || user?.role === 'admin' ? getStudentViews(manifest) : []
-      const roleViews = [...instructorViews, ...studentViews]
-      if (roleViews.length > 0) {
-        get().selectRoleView(roleViews[0])
+      const defaultView = getDefaultRoleView(manifest, user)
+      if (defaultView) {
+        get().selectRoleView(defaultView)
       } else if (firstLessonId) {
         set({ currentLessonId: firstLessonId, contentView: { kind: 'lesson' } })
       }
@@ -184,7 +181,35 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   },
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  setActiveTab: (tab) => set({ activeTab: tab }),
+
+  setActiveTab: (tab) => {
+    const { manifest, progress } = get()
+    if (!manifest) {
+      set({ activeTab: tab })
+      return
+    }
+
+    if (tab === 'menu') {
+      const user = useAppStore.getState().user
+      const defaultView = getDefaultRoleView(manifest, user)
+      if (defaultView) {
+        get().selectRoleView(defaultView)
+      }
+      set({ activeTab: 'menu' })
+      return
+    }
+
+    const lessons = getOrderedLessons(manifest)
+    const nextLesson =
+      lessons.find((lesson) => {
+        const lp = progress?.lessons.find((l) => l.lessonId === lesson.id)
+        return !lp || lp.status !== 'completed'
+      }) ?? lessons[0]
+    if (nextLesson) {
+      get().setCurrentLesson(nextLesson.id)
+    }
+    set({ activeTab: 'overview' })
+  },
 
   selectRoleView: (view) => {
     if (view.render === 'app' && view.appPanel === 'student-dashboard') {

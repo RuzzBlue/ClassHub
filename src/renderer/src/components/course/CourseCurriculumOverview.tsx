@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CourseManifest } from '@shared/schemas'
+import { findLesson } from '@shared/schemas'
 import { cn } from '../../lib/utils'
 
 interface Props {
@@ -33,8 +34,19 @@ export function CourseCurriculumOverview({
   }
 
   const toggleUnit = (id: string): void => {
-    setExpandedUnits((prev) => ({ ...prev, [id]: !prev[id] }))
+    setExpandedUnits((prev) => {
+      const current = prev[id] ?? true
+      return { ...prev, [id]: !current }
+    })
   }
+
+  useEffect(() => {
+    if (!currentLessonId) return
+    const found = findLesson(manifest, currentLessonId)
+    if (!found) return
+    setExpandedModules((prev) => ({ ...prev, [found.module.id]: true }))
+    setExpandedUnits((prev) => ({ ...prev, [found.unit.id]: true }))
+  }, [currentLessonId, manifest])
 
   const statusIcon = (status: string, locked: boolean, isActive: boolean): React.JSX.Element => {
     if (locked) return <i className="fas fa-lock text-xs text-[var(--color-danger)]" />

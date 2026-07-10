@@ -3,7 +3,11 @@ import type { ApiRequest, ApiResponse } from '@shared/api'
 const isElectron = typeof window !== 'undefined' && window.classhub
 
 async function httpFetch<T>(req: ApiRequest): Promise<ApiResponse<T>> {
-  const url = new URL(req.path, 'http://localhost:8765')
+  const base =
+    typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'http://localhost:8765'
+  const url = new URL(req.path, base)
   if (req.params) {
     Object.entries(req.params).forEach(([k, v]) => url.searchParams.set(k, v))
   }

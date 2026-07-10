@@ -1,5 +1,33 @@
 @import 'tailwindcss';
-@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+@layer base {
+  .fas,
+  .far,
+  .fab,
+  .fa-solid,
+  .fa-regular,
+  .fa-brands {
+    font-style: normal;
+    line-height: 1;
+    display: inline-block;
+    -webkit-font-smoothing: antialiased;
+  }
+  .fas,
+  .fa-solid {
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+  }
+  .far,
+  .fa-regular {
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 400;
+  }
+  .fab,
+  .fa-brands {
+    font-family: 'Font Awesome 6 Brands';
+    font-weight: 400;
+  }
+}
 
 @theme {
   --color-bg: #0f1117;
@@ -294,10 +322,49 @@ body {
   color: var(--accent);
   font-weight: 600;
 }
+.sidebar-nav-icon {
+  width: 1rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  -webkit-font-smoothing: antialiased;
+}
+
 .course-sidebar-menu-icon {
   width: 1.125rem;
   text-align: center;
   flex-shrink: 0;
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  -webkit-font-smoothing: antialiased;
+}
+
+.course-sidebar .fas,
+.course-sidebar .far,
+.course-sidebar .fab,
+.course-sidebar-expand .fas {
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  -webkit-font-smoothing: antialiased;
+}
+.course-sidebar .far,
+.course-sidebar .fa-regular {
+  font-weight: 400;
+}
+.course-sidebar .fab,
+.course-sidebar .fa-brands {
+  font-family: 'Font Awesome 6 Brands';
+  font-weight: 400;
 }
 
 .course-curriculum-module {
@@ -383,8 +450,13 @@ body {
   color: white;
   font-weight: 600;
 }
-.course-curriculum-lesson-active:hover {
+.course-curriculum-lesson-active:hover:not(:disabled) {
   background: var(--accent);
+  color: white;
+}
+:root[data-theme='light'] .course-curriculum-lesson-active:hover:not(:disabled) {
+  background: var(--color-surface2);
+  color: var(--color-text);
 }
 
 .course-curriculum-quiz-badge {
