@@ -16,6 +16,7 @@ interface EditableDataTableProps<T extends { id: string }> {
   rows: T[]
   columns: EditableColumn<T>[]
   filterPlaceholder?: string
+  filterExtra?: React.ReactNode
   onSave: (row: T, updates: Record<string, string>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   getEditValues?: (row: T) => Record<string, string>
@@ -26,6 +27,7 @@ export function EditableDataTable<T extends { id: string }>({
   rows,
   columns,
   filterPlaceholder,
+  filterExtra,
   onSave,
   onDelete,
   getEditValues,
@@ -72,12 +74,15 @@ export function EditableDataTable<T extends { id: string }>({
 
   return (
     <div className="space-y-3">
-      <input
-        className="input max-w-sm"
-        placeholder={filterPlaceholder || t('admin.filterTable')}
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          className="input max-w-sm"
+          placeholder={filterPlaceholder || t('admin.filterTable')}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        {filterExtra}
+      </div>
       <div className="card overflow-auto">
         <table className="w-full text-sm">
           <thead>

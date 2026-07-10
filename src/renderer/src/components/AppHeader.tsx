@@ -29,7 +29,7 @@ export function AppHeader({
   const location = useLocation()
   const { user } = useAppStore()
   const onInstructor = location.pathname.startsWith('/instructor')
-  const onLearner = location.pathname.startsWith('/learner-hub')
+  const onStudentHub = location.pathname.startsWith('/student-hub')
   const onLibrary = location.pathname === '/'
 
   return (
@@ -54,17 +54,17 @@ export function AppHeader({
           <button
             type="button"
             className={`btn btn-ghost text-sm ${onInstructor ? 'bg-[var(--color-surface2)]' : ''}`}
-            onClick={() => navigate('/instructor')}
+            onClick={() => navigate('/instructor/dashboard')}
           >
             <i className="fas fa-chalkboard-teacher" /> {t('roles.instructorArea')}
           </button>
         )}
 
-        {user?.role === 'learner' && (
+        {user?.role === 'student' && (
           <button
             type="button"
-            className={`btn btn-ghost text-sm ${onLearner ? 'bg-[var(--color-surface2)]' : ''}`}
-            onClick={() => navigate('/learner-hub')}
+            className={`btn btn-ghost text-sm ${onStudentHub ? 'bg-[var(--color-surface2)]' : ''}`}
+            onClick={() => navigate('/student-hub/dashboard')}
           >
             <i className="fas fa-user-graduate" /> {t('roles.studentHub')}
           </button>

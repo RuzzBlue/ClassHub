@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   license_key_hash TEXT,
   group_id UUID REFERENCES groups(id) ON DELETE SET NULL,
   license_type_id UUID REFERENCES license_types(id) ON DELETE SET NULL,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'instructor', 'learner')),
+  role TEXT NOT NULL CHECK (role IN ('admin', 'instructor', 'student')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('paid', 'active', 'unpaid', 'deactivated')),
   avatar TEXT,
   prefs JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -72,9 +72,18 @@ export async function initDatabase(): Promise<void> {
   for (const statement of SCHEMA.split(';').map((s) => s.trim()).filter(Boolean)) {
     await query(statement)
   }
+  await migrateLearnerRoleToStudent()
   await seedDefaults()
   migrated = true
   console.log('[db] Neon schema ready')
+}
+
+async function migrateLearnerRoleToStudent(): Promise<void> {
+  await query(`UPDATE users SET role = 'student' WHERE role = 'learner'`)
+  await query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`)
+  await query(
+    `ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'instructor', 'student'))`
+  )
 }
 
 async function seedDefaults(): Promise<void> {

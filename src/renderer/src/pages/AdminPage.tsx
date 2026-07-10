@@ -5,8 +5,11 @@ import { AppLayout } from '../components/AppLayout'
 import { EditableDataTable } from '../components/admin/EditableDataTable'
 import { FilterableSelect } from '../components/admin/FilterableSelect'
 import { LicenseKeyCell } from '../components/admin/LicenseKeyCell'
+import { CollapsibleSidebar } from '../components/layout/CollapsibleSidebar'
 import { apiFetch } from '../lib/api-client'
 import { downloadLicenseCertificate } from '../lib/license-export'
+import { formatUserRole } from '../lib/role-label'
+import { useSidebarCollapsed } from '../lib/use-sidebar-collapsed'
 import { useAppStore } from '../stores/app-store'
 import type {
   CourseEnrollment,
@@ -23,7 +26,7 @@ type AdminSection =
   | 'licenses'
   | 'users-admins'
   | 'users-instructors'
-  | 'users-learners'
+  | 'users-students'
   | 'relationships'
 
 
@@ -41,14 +44,16 @@ export function AdminPage(): React.JSX.Element {
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([])
   const [instructors, setInstructors] = useState<User[]>([])
-  const [learners, setLearners] = useState<User[]>([])
+  const [students, setStudents] = useState<User[]>([])
   const [groupFilter, setGroupFilter] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [genLicenseTypeId, setGenLicenseTypeId] = useState('')
   const [genExpiresAt, setGenExpiresAt] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [genAssignedUserId, setGenAssignedUserId] = useState('')
   const [visibleLicenseIds, setVisibleLicenseIds] = useState<Set<string>>(new Set())
+  const [sidebarCollapsed, toggleSidebar] = useSidebarCollapsed('classhub.admin.sidebar')
 
   const loadGroups = useCallback(async () => {
     const res = await apiFetch<Group[]>({ method: 'GET', path: '/api/admin/groups' })
@@ -68,7 +73,7 @@ export function AdminPage(): React.JSX.Element {
   const loadUsers = useCallback(
     async (role: UserRole) => {
       const params: Record<string, string> = { role }
-      if (role === 'learner' && groupFilter) params.groupId = groupFilter
+      if (role === 'student' && groupFilter) params.groupId = groupFilter
       const res = await apiFetch<User[]>({ method: 'GET', path: '/api/admin/users', params })
       if (res.ok && res.data) setUsers(res.data)
     },
@@ -76,7 +81,7 @@ export function AdminPage(): React.JSX.Element {
   )
 
   const loadAllUsers = useCallback(async () => {
-    const roles: UserRole[] = ['admin', 'instructor', 'learner']
+    const roles: UserRole[] = ['admin', 'instructor', 'student']
     const lists = await Promise.all(
       roles.map((role) => apiFetch<User[]>({ method: 'GET', path: '/api/admin/users', params: { role } }))
     )
@@ -112,14 +117,14 @@ export function AdminPage(): React.JSX.Element {
     if (user?.role !== 'admin') return
     if (section === 'users-admins') void loadUsers('admin')
     if (section === 'users-instructors') void loadUsers('instructor')
-    if (section === 'users-learners') void loadUsers('learner')
+    if (section === 'users-students') void loadUsers('student')
     if (section === 'relationships') {
       void loadEnrollments()
       void apiFetch<User[]>({ method: 'GET', path: '/api/admin/users', params: { role: 'instructor' } }).then(
         (res) => res.ok && res.data && setInstructors(res.data)
       )
-      void apiFetch<User[]>({ method: 'GET', path: '/api/admin/users', params: { role: 'learner' } }).then(
-        (res) => res.ok && res.data && setLearners(res.data)
+      void apiFetch<User[]>({ method: 'GET', path: '/api/admin/users', params: { role: 'student' } }).then(
+        (res) => res.ok && res.data && setStudents(res.data)
       )
     }
   }, [section, user, loadUsers, loadEnrollments, groupFilter])
@@ -130,7 +135,7 @@ export function AdminPage(): React.JSX.Element {
   const roleForSection = (): UserRole | null => {
     if (section === 'users-admins') return 'admin'
     if (section === 'users-instructors') return 'instructor'
-    if (section === 'users-learners') return 'learner'
+    if (section === 'users-students') return 'student'
     return null
   }
 
@@ -152,7 +157,19 @@ export function AdminPage(): React.JSX.Element {
       { value: '', label: t('admin.unassigned') },
       ...allUsers
         .filter((u) => u.id === currentAssignedId || !takenByOthers.has(u.id))
-        .map((u) => ({ value: u.id, label: `${u.displayName} (${u.role})` }))
+        .map((u) => ({ value: u.id, label: `${u.displayName} (${formatUserRole(u.role, t)})` }))
+    ]
+  }
+
+  const getGenAssignOptions = () => {
+    const taken = new Set(
+      licenseKeys.filter((lk) => lk.assignedUserId).map((lk) => lk.assignedUserId as string)
+    )
+    return [
+      { value: '', label: t('admin.unassigned') },
+      ...allUsers
+        .filter((u) => !taken.has(u.id))
+        .map((u) => ({ value: u.id, label: `${u.displayName} (${formatUserRole(u.role, t)})` }))
     ]
   }
 
@@ -209,12 +226,14 @@ export function AdminPage(): React.JSX.Element {
       path: '/api/admin/license-keys',
       body: {
         licenseTypeId: genLicenseTypeId,
-        expiresAt: genExpiresAt || null
+        expiresAt: genExpiresAt || null,
+        assignedUserId: genAssignedUserId || null
       }
     })
     setGenerating(false)
     if (res.ok) {
       setMessage(t('admin.licenseGenerated'))
+      setGenAssignedUserId('')
       await loadLicenseKeys()
       if (res.data) downloadLicenseCertificate(res.data)
     } else setMessage(res.error || t('admin.error'))
@@ -225,31 +244,21 @@ export function AdminPage(): React.JSX.Element {
     { id: 'licenses', label: t('admin.licenses'), icon: 'fa-key' },
     { id: 'users-admins', label: t('admin.admins'), icon: 'fa-user-shield' },
     { id: 'users-instructors', label: t('admin.instructors'), icon: 'fa-chalkboard-user' },
-    { id: 'users-learners', label: t('admin.learners'), icon: 'fa-user-graduate' },
+    { id: 'users-students', label: t('admin.students'), icon: 'fa-user-graduate' },
     { id: 'relationships', label: t('admin.relationships'), icon: 'fa-link' }
   ]
 
   return (
     <AppLayout>
       <div className="flex flex-1 min-h-0">
-        <aside className="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 overflow-auto">
-          <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)] px-2 mb-2">
-            {t('admin.menu')}
-          </p>
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 mb-1 cursor-pointer ${
-                section === item.id ? 'bg-[var(--color-surface2)]' : 'hover:bg-[var(--color-surface2)]'
-              }`}
-              onClick={() => setSection(item.id)}
-            >
-              <i className={`fas ${item.icon} w-4`} />
-              {item.label}
-            </button>
-          ))}
-        </aside>
+        <CollapsibleSidebar
+          title={t('admin.menu')}
+          items={sidebarItems}
+          activeId={section}
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={toggleSidebar}
+          onSelect={(id) => setSection(id as AdminSection)}
+        />
 
         <main className="flex-1 overflow-auto p-6">
           <h1 className="text-xl font-bold mb-4">{sidebarItems.find((s) => s.id === section)?.label}</h1>
@@ -357,6 +366,14 @@ export function AdminPage(): React.JSX.Element {
                       className="input py-1.5 text-sm"
                       value={genExpiresAt}
                       onChange={(e) => setGenExpiresAt(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[var(--color-text-muted)]">{t('admin.assignedTo')}</label>
+                    <FilterableSelect
+                      value={genAssignedUserId}
+                      options={getGenAssignOptions()}
+                      onChange={setGenAssignedUserId}
                     />
                   </div>
                   <button
@@ -485,24 +502,6 @@ export function AdminPage(): React.JSX.Element {
 
           {section.startsWith('users-') && (
             <>
-              {section === 'users-learners' && (
-                <div className="mb-4 flex items-center gap-2">
-                  <label className="text-sm">{t('admin.filterByGroup')}</label>
-                  <select
-                    className="input max-w-xs"
-                    value={groupFilter}
-                    onChange={(e) => setGroupFilter(e.target.value)}
-                  >
-                    <option value="">{t('admin.allGroups')}</option>
-                    {groups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               <form
                 className="card p-4 mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
                 onSubmit={(e) => {
@@ -536,6 +535,25 @@ export function AdminPage(): React.JSX.Element {
 
               <EditableDataTable
                 rows={users}
+                filterExtra={
+                  section === 'users-students' ? (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm whitespace-nowrap">{t('admin.filterByGroup')}</label>
+                      <select
+                        className="input py-1.5 text-sm max-w-xs"
+                        value={groupFilter}
+                        onChange={(e) => setGroupFilter(e.target.value)}
+                      >
+                        <option value="">{t('admin.allGroups')}</option>
+                        {groups.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : undefined
+                }
                 columns={[
                   { key: 'displayName', label: t('settings.displayName'), editable: true, getValue: (r) => r.displayName },
                   { key: 'email', label: t('auth.email'), editable: true, getValue: (r) => r.email },
@@ -590,7 +608,7 @@ export function AdminPage(): React.JSX.Element {
             <EnrollmentPanel
               enrollments={enrollments}
               instructors={instructors}
-              learners={learners}
+              students={students}
               onRefresh={loadEnrollments}
             />
           )}
@@ -651,21 +669,21 @@ function NamedEntityPanel({
 function EnrollmentPanel({
   enrollments,
   instructors,
-  learners,
+  students,
   onRefresh
 }: {
   enrollments: CourseEnrollment[]
   instructors: User[]
-  learners: User[]
+  students: User[]
   onRefresh: () => Promise<void>
 }): React.JSX.Element {
   const { t } = useTranslation()
   const [courseId, setCourseId] = useState('')
   const [instructorId, setInstructorId] = useState('')
-  const [learnerId, setLearnerId] = useState('')
+  const [studentId, setStudentId] = useState('')
 
   const instructorOptions = instructors.map((i) => ({ value: i.id, label: i.displayName }))
-  const learnerOptions = learners.map((l) => ({ value: l.id, label: l.displayName }))
+  const studentOptions = students.map((s) => ({ value: s.id, label: s.displayName }))
 
   return (
     <>
@@ -676,10 +694,10 @@ function EnrollmentPanel({
           await apiFetch({
             method: 'POST',
             path: '/api/admin/enrollments',
-            body: { courseId, instructorId, learnerId }
+            body: { courseId, instructorId, studentId }
           })
           setCourseId('')
-          setLearnerId('')
+          setStudentId('')
           await onRefresh()
         }}
       >
@@ -698,11 +716,11 @@ function EnrollmentPanel({
             </option>
           ))}
         </select>
-        <select className="input" value={learnerId} onChange={(e) => setLearnerId(e.target.value)} required>
-          <option value="">{t('admin.selectLearner')}</option>
-          {learners.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.displayName}
+        <select className="input" value={studentId} onChange={(e) => setStudentId(e.target.value)} required>
+          <option value="">{t('admin.selectStudent')}</option>
+          {students.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.displayName}
             </option>
           ))}
         </select>
@@ -724,17 +742,17 @@ function EnrollmentPanel({
             getValue: (r) => r.instructorName
           },
           {
-            key: 'learnerId',
-            label: t('admin.learner'),
+            key: 'studentId',
+            label: t('admin.student'),
             editable: true,
             type: 'select',
-            options: learnerOptions,
-            getValue: (r) => r.learnerName
+            options: studentOptions,
+            getValue: (r) => r.studentName
           }
         ]}
         getEditValues={(row) => ({
           instructorId: row.instructorId,
-          learnerId: row.learnerId
+          studentId: row.studentId
         })}
         onSave={async (row, updates) => {
           await apiFetch({
@@ -743,7 +761,7 @@ function EnrollmentPanel({
             body: {
               courseId: updates.courseId,
               instructorId: updates.instructorId,
-              learnerId: updates.learnerId
+              studentId: updates.studentId
             }
           })
           await onRefresh()

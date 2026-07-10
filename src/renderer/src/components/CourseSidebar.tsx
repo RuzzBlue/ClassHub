@@ -4,6 +4,7 @@ import type { ProgressSnapshot } from '@shared/types'
 import { useAppStore } from '../stores/app-store'
 import { useCourseStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
+import { courseRoleForUser } from '../lib/role-label'
 import { cn } from '../lib/utils'
 
 interface Props {
@@ -110,7 +111,7 @@ export function CourseSidebar({
         <div className="border-t border-[var(--color-border)] p-3">
           <div className="text-xs font-semibold text-[var(--color-text-muted)] mb-2">{t('course.extras')}</div>
           {manifest.extras
-            .filter((e) => e.roles.includes(user?.role || 'learner'))
+            .filter((e) => e.roles.includes(courseRoleForUser(user?.role)))
             .sort((a, b) => a.order - b.order)
             .map((extra) => (
               <button key={extra.id} className="btn btn-ghost w-full text-sm justify-start mb-1">

@@ -96,8 +96,8 @@ export async function handleAdminRequest(req: ApiRequest): Promise<ApiResponse |
   // Users by role
   if (method === 'GET' && path === '/api/admin/users') {
     const role = params?.role as UserRole | undefined
-    if (!role || !['admin', 'instructor', 'learner'].includes(role)) {
-      return err('role query param required (admin|instructor|learner)', 400)
+    if (!role || !['admin', 'instructor', 'student'].includes(role)) {
+      return err('role query param required (admin|instructor|student)', 400)
     }
     const groupId = params?.groupId || undefined
     return ok(await listUsersByRole(role, groupId))
@@ -154,29 +154,34 @@ export async function handleAdminRequest(req: ApiRequest): Promise<ApiResponse |
     return ok(await listEnrollments())
   }
   if (method === 'POST' && path === '/api/admin/enrollments') {
-    const { courseId, instructorId, learnerId } = body as {
+    const { courseId, instructorId, learnerId, studentId } = body as {
       courseId: string
       instructorId: string
-      learnerId: string
+      learnerId?: string
+      studentId?: string
     }
-    if (!courseId?.trim() || !instructorId || !learnerId) {
-      return err('courseId, instructorId, and learnerId are required', 400)
+    const enrolledStudentId = studentId || learnerId
+    if (!courseId?.trim() || !instructorId || !enrolledStudentId) {
+      return err('courseId, instructorId, and studentId are required', 400)
     }
     try {
-      return ok(await createEnrollment(courseId, instructorId, learnerId))
+      return ok(await createEnrollment(courseId, instructorId, enrolledStudentId))
     } catch (e) {
       return err((e as Error).message, 400)
     }
   }
   if (method === 'PUT' && path.match(/^\/api\/admin\/enrollments\/[^/]+$/)) {
     const id = path.split('/').pop()!
-    const { courseId, instructorId, learnerId } = body as {
+    const { courseId, instructorId, learnerId, studentId } = body as {
       courseId: string
       instructorId: string
-      learnerId: string
+      learnerId?: string
+      studentId?: string
     }
+    const enrolledStudentId = studentId || learnerId
+    if (!enrolledStudentId) return err('studentId required', 400)
     try {
-      const updated = await updateEnrollment(id, courseId, instructorId, learnerId)
+      const updated = await updateEnrollment(id, courseId, instructorId, enrolledStudentId)
       if (!updated) return err('Enrollment not found', 404)
       return ok(updated)
     } catch (e) {
@@ -194,10 +199,20 @@ export async function handleAdminRequest(req: ApiRequest): Promise<ApiResponse |
     return ok(await listLicenseKeys())
   }
   if (method === 'POST' && path === '/api/admin/license-keys') {
-    const { licenseTypeId, expiresAt } = body as { licenseTypeId: string; expiresAt?: string | null }
+    const { licenseTypeId, expiresAt, assignedUserId } = body as {
+      licenseTypeId: string
+      expiresAt?: string | null
+      assignedUserId?: string | null
+    }
     if (!licenseTypeId) return err('licenseTypeId required', 400)
     try {
-      return ok(await createLicenseKey(licenseTypeId, expiresAt || null))
+      return ok(
+        await createLicenseKey(
+          licenseTypeId,
+          expiresAt || null,
+          assignedUserId === '' ? null : assignedUserId || null
+        )
+      )
     } catch (e) {
       return err((e as Error).message, 400)
     }

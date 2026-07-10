@@ -15,7 +15,7 @@ interface AppState {
   loadCourses: () => Promise<void>
   loadUser: () => Promise<void>
   logout: () => Promise<void>
-  switchRole: (role: 'learner' | 'instructor') => Promise<void>
+  switchRole: (role: 'student' | 'instructor') => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set, get) => ({

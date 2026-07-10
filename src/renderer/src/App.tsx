@@ -6,7 +6,7 @@ import { CoursePage } from './pages/CoursePage'
 import { PresenterPage } from './pages/PresenterPage'
 import { AdminPage } from './pages/AdminPage'
 import { InstructorAreaPage } from './pages/InstructorAreaPage'
-import { LearnerHubPage } from './pages/LearnerHubPage'
+import { StudentHubPage } from './pages/StudentHubPage'
 import { importCourse } from './lib/course-actions'
 
 function MenuListener(): null {
@@ -50,8 +50,11 @@ export default function App(): React.JSX.Element {
       <Routes>
         <Route path="/" element={<LibraryPage />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/instructor" element={<InstructorAreaPage />} />
-        <Route path="/learner-hub" element={<LearnerHubPage />} />
+        <Route path="/instructor" element={<Navigate to="/instructor/dashboard" replace />} />
+        <Route path="/instructor/:section" element={<InstructorAreaPage />} />
+        <Route path="/student-hub" element={<Navigate to="/student-hub/dashboard" replace />} />
+        <Route path="/student-hub/:section" element={<StudentHubPage />} />
+        <Route path="/learner-hub/*" element={<Navigate to="/student-hub/dashboard" replace />} />
         <Route path="/course/:courseId" element={<CoursePage />} />
         <Route path="/presenter/:courseId/:lessonId/:sectionId" element={<PresenterPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

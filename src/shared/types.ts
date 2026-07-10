@@ -41,7 +41,7 @@ export interface User {
   createdAt: string
 }
 
-export type UserRole = 'admin' | 'instructor' | 'learner'
+export type UserRole = 'admin' | 'instructor' | 'student'
 export type UserStatus = 'paid' | 'active' | 'unpaid' | 'deactivated'
 
 export interface Group {
@@ -63,8 +63,8 @@ export interface CourseEnrollment {
   courseId: string
   instructorId: string
   instructorName: string
-  learnerId: string
-  learnerName: string
+  studentId: string
+  studentName: string
   createdAt: string
 }
 

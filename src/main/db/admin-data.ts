@@ -83,8 +83,8 @@ export async function listEnrollments(): Promise<CourseEnrollment[]> {
     courseId: r.course_id,
     instructorId: r.instructor_id,
     instructorName: r.instructor_name,
-    learnerId: r.learner_id,
-    learnerName: r.learner_name,
+    studentId: r.learner_id,
+    studentName: r.learner_name,
     createdAt: r.created_at
   }))
 }
@@ -198,14 +198,18 @@ export async function listLicenseKeys(): Promise<LicenseKey[]> {
 
 export async function createLicenseKey(
   licenseTypeId: string,
-  expiresAt?: string | null
+  expiresAt?: string | null,
+  assignedUserId?: string | null
 ): Promise<LicenseKey> {
+  if (assignedUserId) {
+    await assertUserHasNoOtherLicense(assignedUserId)
+  }
   const code = await uniqueLicenseCode()
   const codeHash = hashLicenseKey(code)
   const row = await queryOne<{ id: string }>(
-    `INSERT INTO license_keys (code, code_hash, license_type_id, status, expires_at)
-     VALUES ($1, $2, $3, 'active', $4) RETURNING id`,
-    [code, codeHash, licenseTypeId, expiresAt || null]
+    `INSERT INTO license_keys (code, code_hash, license_type_id, status, expires_at, assigned_user_id)
+     VALUES ($1, $2, $3, 'active', $4, $5) RETURNING id`,
+    [code, codeHash, licenseTypeId, expiresAt || null, assignedUserId || null]
   )
   if (!row) throw new Error('Failed to create license')
   const list = await listLicenseKeys()

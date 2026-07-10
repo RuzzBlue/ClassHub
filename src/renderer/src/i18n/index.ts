@@ -15,14 +15,17 @@ const resources = {
         exportCourseHint: 'Choose a course to export as a .zip bundle.',
         adminDashboard: 'Admin Dashboard',
         help: 'Help',
-        roleViewsMore: 'More role views'
+        roleViewsMore: 'More role views',
+        collapseSidebar: 'Collapse sidebar',
+        expandSidebar: 'Expand sidebar'
       },
       admin: {
         menu: 'Administration',
         general: 'General',
         admins: 'Admins',
         instructors: 'Instructors',
-        learners: 'Learners',
+        learners: 'Students',
+        students: 'Students',
         relationships: 'Relationships',
         groups: 'Groups',
         licenseTypes: 'License types',
@@ -41,10 +44,11 @@ const resources = {
         noLicenseType: 'No license type',
         courseId: 'Course ID',
         instructor: 'Instructor',
-        learner: 'Learner',
+        learner: 'Student',
+        student: 'Student',
         selectInstructor: 'Select instructor',
-        selectLearner: 'Select learner',
-        enroll: 'Enroll learner',
+        selectStudent: 'Select student',
+        enroll: 'Enroll student',
         filterTable: 'Filter table…',
         noRows: 'No matching rows',
         licenses: 'License keys',
@@ -66,8 +70,23 @@ const resources = {
         instructorArea: 'Instructor Area',
         instructorAreaHint: 'Instructor tools and course management will live here.',
         studentHub: 'Student Hub',
-        studentHubHint: 'Learner progress and assignments will live here.',
+        studentHubHint: 'Student progress and assignments will live here.',
         signedInAs: 'Signed in as'
+      },
+      instructor: {
+        menu: 'Instructor',
+        dashboard: 'Dashboard',
+        courses: 'Courses',
+        creatorLab: 'Creator Lab',
+        assistance: 'Assistance',
+        grades: 'Grades',
+        settings: 'Settings'
+      },
+      student: {
+        menu: 'Student Hub',
+        dashboard: 'Dashboard',
+        progress: 'Progress',
+        chat: 'Chat'
       },
       library: {
         title: 'Course Library',
@@ -102,7 +121,8 @@ const resources = {
         appSettings: 'App Settings',
         displayName: 'Display name',
         role: 'Role',
-        learner: 'Learner',
+        learner: 'Student',
+        student: 'Student',
         instructor: 'Instructor',
         admin: 'Admin',
         language: 'Language',
@@ -183,7 +203,9 @@ const resources = {
         exportCourseHint: 'Elige un curso para exportar como paquete .zip.',
         adminDashboard: 'Panel Admin',
         help: 'Ayuda',
-        roleViewsMore: 'Más vistas de rol'
+        roleViewsMore: 'Más vistas de rol',
+        collapseSidebar: 'Contraer panel',
+        expandSidebar: 'Expandir panel'
       },
       admin: {
         menu: 'Administración',
@@ -191,6 +213,7 @@ const resources = {
         admins: 'Administradores',
         instructors: 'Instructores',
         learners: 'Estudiantes',
+        students: 'Estudiantes',
         relationships: 'Relaciones',
         groups: 'Grupos',
         licenseTypes: 'Tipos de licencia',
@@ -210,8 +233,9 @@ const resources = {
         courseId: 'ID del curso',
         instructor: 'Instructor',
         learner: 'Estudiante',
+        student: 'Estudiante',
         selectInstructor: 'Seleccionar instructor',
-        selectLearner: 'Seleccionar estudiante',
+        selectStudent: 'Seleccionar estudiante',
         enroll: 'Inscribir estudiante',
         filterTable: 'Filtrar tabla…',
         noRows: 'Sin filas coincidentes',
@@ -236,6 +260,21 @@ const resources = {
         studentHub: 'Hub del Estudiante',
         studentHubHint: 'El progreso y tareas del estudiante estarán aquí.',
         signedInAs: 'Sesión iniciada como'
+      },
+      instructor: {
+        menu: 'Instructor',
+        dashboard: 'Panel',
+        courses: 'Cursos',
+        creatorLab: 'Laboratorio',
+        assistance: 'Asistencia',
+        grades: 'Calificaciones',
+        settings: 'Configuración'
+      },
+      student: {
+        menu: 'Hub del Estudiante',
+        dashboard: 'Panel',
+        progress: 'Progreso',
+        chat: 'Chat'
       },
       library: {
         title: 'Biblioteca de Cursos',
@@ -271,6 +310,7 @@ const resources = {
         displayName: 'Nombre',
         role: 'Rol',
         learner: 'Estudiante',
+        student: 'Estudiante',
         instructor: 'Instructor',
         admin: 'Administrador',
         language: 'Idioma',

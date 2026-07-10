@@ -10,8 +10,8 @@ export function AdminDashboardMenu(): React.JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
   const onAdmin = location.pathname.startsWith('/admin')
   const onInstructor = location.pathname.startsWith('/instructor')
-  const onLearner = location.pathname.startsWith('/learner-hub')
-  const active = onAdmin || onInstructor || onLearner
+  const onStudentHub = location.pathname.startsWith('/student-hub')
+  const active = onAdmin || onInstructor || onStudentHub
 
   useEffect(() => {
     if (!open) return
@@ -49,7 +49,7 @@ export function AdminDashboardMenu(): React.JSX.Element {
             className="header-dropdown-item"
             onClick={() => {
               setOpen(false)
-              navigate('/instructor')
+              navigate('/instructor/dashboard')
             }}
           >
             <i className="fas fa-chalkboard-teacher w-4" />
@@ -60,7 +60,7 @@ export function AdminDashboardMenu(): React.JSX.Element {
             className="header-dropdown-item"
             onClick={() => {
               setOpen(false)
-              navigate('/learner-hub')
+              navigate('/student-hub/dashboard')
             }}
           >
             <i className="fas fa-user-graduate w-4" />

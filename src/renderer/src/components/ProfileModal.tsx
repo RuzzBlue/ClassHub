@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
 import { PasswordField } from './PasswordField'
+import { formatUserRole } from '../lib/role-label'
 import type { User } from '@shared/types'
 import { cn } from '../lib/utils'
 
@@ -215,7 +216,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
             <>
               <div className="card p-4 bg-[var(--color-surface2)]">
                 <p className="text-sm text-[var(--color-text-muted)]">{t('settings.role')}</p>
-                <p className="font-semibold capitalize">{user.role}</p>
+                <p className="font-semibold">{formatUserRole(user.role, t)}</p>
                 <p className="text-sm text-[var(--color-text-muted)] mt-2">{t('admin.status')}</p>
                 <p className="capitalize">{user.status}</p>
                 {user.groupName && (
@@ -231,19 +232,19 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
                   className="btn btn-primary w-full justify-center cursor-pointer"
                   onClick={() => {
                     onClose()
-                    navigate('/instructor')
+                    navigate('/instructor/dashboard')
                   }}
                 >
                   <i className="fas fa-chalkboard-teacher" /> {t('roles.instructorArea')}
                 </button>
               )}
-              {(user.role === 'learner' || user.role === 'admin') && (
+              {(user.role === 'student' || user.role === 'admin') && (
                 <button
                   type="button"
                   className="btn btn-ghost w-full justify-center border border-[var(--color-border)] cursor-pointer"
                   onClick={() => {
                     onClose()
-                    navigate('/learner-hub')
+                    navigate('/student-hub/dashboard')
                   }}
                 >
                   <i className="fas fa-user-graduate" /> {t('roles.studentHub')}
