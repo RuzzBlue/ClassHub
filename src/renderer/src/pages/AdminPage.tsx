@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppLayout } from '../components/AppLayout'
 import { EditableDataTable } from '../components/admin/EditableDataTable'
+import { FilterableSelect } from '../components/admin/FilterableSelect'
 import { apiFetch } from '../lib/api-client'
 import { downloadLicenseCertificate } from '../lib/license-export'
 import { useAppStore } from '../stores/app-store'
@@ -18,10 +19,13 @@ import type {
 
 type AdminSection =
   | 'general'
+  | 'licenses'
   | 'users-admins'
   | 'users-instructors'
   | 'users-learners'
   | 'relationships'
+
+const MASKED_LICENSE_KEY = '••••••••••••'
 
 const STATUSES: UserStatus[] = ['paid', 'active', 'unpaid', 'deactivated']
 const LICENSE_STATUSES = ['active', 'inactive'] as const
@@ -91,9 +95,13 @@ export function AdminPage(): React.JSX.Element {
     if (user?.role !== 'admin') return
     void loadGroups()
     void loadLicenseTypes()
-    void loadLicenseKeys()
     void loadAllUsers()
-  }, [user, loadGroups, loadLicenseTypes, loadLicenseKeys, loadAllUsers])
+  }, [user, loadGroups, loadLicenseTypes, loadAllUsers])
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return
+    if (section === 'licenses') void loadLicenseKeys()
+  }, [section, user, loadLicenseKeys])
 
   useEffect(() => {
     if (licenseTypes.length && !genLicenseTypeId) setGenLicenseTypeId(licenseTypes[0].id)
@@ -130,18 +138,34 @@ export function AdminPage(): React.JSX.Element {
     ...groups.map((g) => ({ value: g.id, label: g.name }))
   ]
 
-  const licenseTypeOptions = [
-    { value: '', label: t('admin.noLicenseType') },
-    ...licenseTypes.map((lt) => ({ value: lt.id, label: lt.name }))
-  ]
-
   const statusOptions = STATUSES.map((s) => ({ value: s, label: s }))
   const licenseStatusOptions = LICENSE_STATUSES.map((s) => ({ value: s, label: s }))
 
-  const userAssignOptions = [
-    { value: '', label: t('admin.unassigned') },
-    ...allUsers.map((u) => ({ value: u.id, label: `${u.displayName} (${u.role})` }))
-  ]
+  const getAssignOptions = (licenseId: string, currentAssignedId: string | null) => {
+    const takenByOthers = new Set(
+      licenseKeys
+        .filter((lk) => lk.assignedUserId && lk.id !== licenseId)
+        .map((lk) => lk.assignedUserId as string)
+    )
+    return [
+      { value: '', label: t('admin.unassigned') },
+      ...allUsers
+        .filter((u) => u.id === currentAssignedId || !takenByOthers.has(u.id))
+        .map((u) => ({ value: u.id, label: `${u.displayName} (${u.role})` }))
+    ]
+  }
+
+  const handleRegenerateLicense = async (id: string): Promise<void> => {
+    const res = await apiFetch<LicenseKey>({
+      method: 'POST',
+      path: `/api/admin/license-keys/${id}/regenerate`
+    })
+    if (res.ok) {
+      setMessage(t('admin.licenseRegenerated'))
+      await loadLicenseKeys()
+      if (res.data) downloadLicenseCertificate(res.data)
+    } else setMessage(res.error || t('admin.error'))
+  }
 
   const handleCreateUser = async (form: FormData): Promise<void> => {
     const role = roleForSection()
@@ -154,9 +178,7 @@ export function AdminPage(): React.JSX.Element {
         displayName: form.get('displayName'),
         email: form.get('email'),
         password: form.get('password'),
-        licenseKey: form.get('licenseKey') || undefined,
         groupId: (form.get('groupId') as string) || null,
-        licenseTypeId: (form.get('licenseTypeId') as string) || null,
         role,
         status: (form.get('status') as UserStatus) || 'active'
       }
@@ -190,6 +212,7 @@ export function AdminPage(): React.JSX.Element {
 
   const sidebarItems: { id: AdminSection; label: string; icon: string }[] = [
     { id: 'general', label: t('admin.general'), icon: 'fa-sliders' },
+    { id: 'licenses', label: t('admin.licenses'), icon: 'fa-key' },
     { id: 'users-admins', label: t('admin.admins'), icon: 'fa-user-shield' },
     { id: 'users-instructors', label: t('admin.instructors'), icon: 'fa-chalkboard-user' },
     { id: 'users-learners', label: t('admin.learners'), icon: 'fa-user-graduate' },
@@ -223,9 +246,8 @@ export function AdminPage(): React.JSX.Element {
           {message && <p className="text-sm mb-4 text-[var(--color-success)]">{message}</p>}
 
           {section === 'general' && (
-            <div className="space-y-8">
-              <div className="grid gap-8 lg:grid-cols-2">
-                <NamedEntityPanel
+            <div className="grid gap-8 lg:grid-cols-2">
+              <NamedEntityPanel
                   title={t('admin.groups')}
                   onAdd={async (name, description) => {
                     await apiFetch({ method: 'POST', path: '/api/admin/groups', body: { name, description } })
@@ -294,134 +316,156 @@ export function AdminPage(): React.JSX.Element {
                     }}
                   />
                 </NamedEntityPanel>
-              </div>
+            </div>
+          )}
 
-              <div className="card p-4 space-y-4">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <h2 className="font-semibold text-lg">{t('admin.licenses')}</h2>
-                    <p className="text-sm text-[var(--color-text-muted)]">{t('admin.licensesHint')}</p>
-                  </div>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <div>
-                      <label className="text-xs text-[var(--color-text-muted)]">{t('admin.licenseTypes')}</label>
-                      <select
-                        className="input py-1.5 text-sm min-w-[160px]"
-                        value={genLicenseTypeId}
-                        onChange={(e) => setGenLicenseTypeId(e.target.value)}
-                      >
-                        {licenseTypes.map((lt) => (
-                          <option key={lt.id} value={lt.id}>
-                            {lt.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-[var(--color-text-muted)]">{t('admin.expiresAt')}</label>
-                      <input
-                        type="date"
-                        className="input py-1.5 text-sm"
-                        value={genExpiresAt}
-                        onChange={(e) => setGenExpiresAt(e.target.value)}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-primary cursor-pointer"
-                      disabled={generating || !genLicenseTypeId}
-                      onClick={() => void handleGenerateLicense()}
-                    >
-                      {generating ? (
-                        <i className="fas fa-spinner fa-spin" />
-                      ) : (
-                        <i className="fas fa-key" />
-                      )}
-                      {t('admin.generateLicense')}
-                    </button>
-                  </div>
+          {section === 'licenses' && (
+            <div className="card p-4 space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('admin.licensesHint')}</p>
                 </div>
-
-                <EditableDataTable
-                  rows={licenseKeys}
-                  columns={[
-                    {
-                      key: 'code',
-                      label: t('admin.licenseCode'),
-                      editable: false,
-                      getValue: (r) => r.code,
-                      render: (r) => <span className="font-mono text-xs">{r.code}</span>
-                    },
-                    {
-                      key: 'licenseTypeId',
-                      label: t('admin.licenseTypes'),
-                      editable: true,
-                      type: 'select',
-                      options: licenseTypes.map((lt) => ({ value: lt.id, label: lt.name })),
-                      getValue: (r) => r.licenseTypeName
-                    },
-                    {
-                      key: 'status',
-                      label: t('admin.status'),
-                      editable: true,
-                      type: 'select',
-                      options: licenseStatusOptions,
-                      getValue: (r) => r.status
-                    },
-                    {
-                      key: 'expiresAt',
-                      label: t('admin.expiresAt'),
-                      editable: true,
-                      type: 'date',
-                      getValue: (r) =>
-                        r.expiresAt
-                          ? new Date(r.expiresAt).toLocaleDateString()
-                          : t('admin.noExpiration')
-                    },
-                    {
-                      key: 'assignedUserId',
-                      label: t('admin.assignedTo'),
-                      editable: true,
-                      type: 'select',
-                      options: userAssignOptions,
-                      getValue: (r) => r.assignedUserName || t('admin.unassigned')
-                    }
-                  ]}
-                  getEditValues={(row) => ({
-                    licenseTypeId: row.licenseTypeId,
-                    status: row.status,
-                    expiresAt: row.expiresAt ? row.expiresAt.slice(0, 10) : '',
-                    assignedUserId: row.assignedUserId || ''
-                  })}
-                  onSave={async (row, updates) => {
-                    await apiFetch({
-                      method: 'PUT',
-                      path: `/api/admin/license-keys/${row.id}`,
-                      body: {
-                        licenseTypeId: updates.licenseTypeId,
-                        status: updates.status,
-                        expiresAt: updates.expiresAt || null,
-                        assignedUserId: updates.assignedUserId || null
-                      }
-                    })
-                    await loadLicenseKeys()
-                  }}
-                  onDelete={async (id) => {
-                    await apiFetch({ method: 'DELETE', path: `/api/admin/license-keys/${id}` })
-                    await loadLicenseKeys()
-                  }}
-                  extraActions={(row) => (
-                    <button
-                      type="button"
-                      className="btn btn-ghost text-xs px-2 cursor-pointer"
-                      title={t('admin.exportLicense')}
-                      onClick={() => downloadLicenseCertificate(row)}
+                <div className="flex flex-wrap items-end gap-2">
+                  <div>
+                    <label className="text-xs text-[var(--color-text-muted)]">{t('admin.licenseTypes')}</label>
+                    <select
+                      className="input py-1.5 text-sm min-w-[160px]"
+                      value={genLicenseTypeId}
+                      onChange={(e) => setGenLicenseTypeId(e.target.value)}
                     >
-                      <i className="fas fa-file-export" />
-                    </button>
-                  )}
-                />
+                      {licenseTypes.map((lt) => (
+                        <option key={lt.id} value={lt.id}>
+                          {lt.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[var(--color-text-muted)]">{t('admin.expiresAt')}</label>
+                    <input
+                      type="date"
+                      className="input py-1.5 text-sm"
+                      value={genExpiresAt}
+                      onChange={(e) => setGenExpiresAt(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary cursor-pointer"
+                    disabled={generating || !genLicenseTypeId}
+                    onClick={() => void handleGenerateLicense()}
+                  >
+                    {generating ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-key" />}
+                    {t('admin.generateLicense')}
+                  </button>
+                </div>
               </div>
+
+              <EditableDataTable
+                rows={licenseKeys}
+                columns={[
+                  {
+                    key: 'code',
+                    label: t('admin.licenseKey'),
+                    editable: true,
+                    getValue: () => MASKED_LICENSE_KEY,
+                    render: () => (
+                      <span className="font-mono text-xs tracking-widest text-[var(--color-text-muted)]">
+                        {MASKED_LICENSE_KEY}
+                      </span>
+                    ),
+                    renderEdit: (row) => (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs tracking-widest text-[var(--color-text-muted)]">
+                          {MASKED_LICENSE_KEY}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost text-xs px-2 cursor-pointer whitespace-nowrap"
+                          onClick={() => void handleRegenerateLicense(row.id)}
+                        >
+                          <i className="fas fa-rotate" /> {t('admin.regenerateLicense')}
+                        </button>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'licenseTypeId',
+                    label: t('admin.licenseTypes'),
+                    editable: true,
+                    type: 'select',
+                    options: licenseTypes.map((lt) => ({ value: lt.id, label: lt.name })),
+                    getValue: (r) => r.licenseTypeName
+                  },
+                  {
+                    key: 'status',
+                    label: t('admin.status'),
+                    editable: true,
+                    type: 'select',
+                    options: licenseStatusOptions,
+                    getValue: (r) => r.status
+                  },
+                  {
+                    key: 'expiresAt',
+                    label: t('admin.expiresAt'),
+                    editable: true,
+                    type: 'date',
+                    getValue: (r) =>
+                      r.expiresAt ? new Date(r.expiresAt).toLocaleDateString() : t('admin.noExpiration')
+                  },
+                  {
+                    key: 'assignedUserId',
+                    label: t('admin.assignedTo'),
+                    editable: true,
+                    getValue: (r) => r.assignedUserName || t('admin.unassigned'),
+                    renderEdit: (row, value, onChange) => (
+                      <FilterableSelect
+                        value={value}
+                        options={getAssignOptions(row.id, row.assignedUserId)}
+                        onChange={onChange}
+                      />
+                    )
+                  }
+                ]}
+                getEditValues={(row) => ({
+                  licenseTypeId: row.licenseTypeId,
+                  status: row.status,
+                  expiresAt: row.expiresAt ? row.expiresAt.slice(0, 10) : '',
+                  assignedUserId: row.assignedUserId || ''
+                })}
+                onSave={async (row, updates) => {
+                  const res = await apiFetch<LicenseKey>({
+                    method: 'PUT',
+                    path: `/api/admin/license-keys/${row.id}`,
+                    body: {
+                      licenseTypeId: updates.licenseTypeId,
+                      status: updates.status,
+                      expiresAt: updates.expiresAt || null,
+                      assignedUserId: updates.assignedUserId || null
+                    }
+                  })
+                  if (!res.ok) {
+                    setMessage(res.error || t('admin.error'))
+                    throw new Error(res.error || 'save failed')
+                  }
+                  setMessage(t('admin.saved'))
+                  await loadLicenseKeys()
+                }}
+                onDelete={async (id) => {
+                  await apiFetch({ method: 'DELETE', path: `/api/admin/license-keys/${id}` })
+                  await loadLicenseKeys()
+                }}
+                extraActions={(row) => (
+                  <button
+                    type="button"
+                    className="btn btn-ghost text-xs px-2 cursor-pointer"
+                    title={t('admin.exportLicense')}
+                    onClick={() => downloadLicenseCertificate(row)}
+                  >
+                    <i className="fas fa-file-export" />
+                  </button>
+                )}
+              />
             </div>
           )}
 
@@ -456,20 +500,11 @@ export function AdminPage(): React.JSX.Element {
                 <input className="input" name="displayName" placeholder={t('settings.displayName')} required />
                 <input className="input" name="email" type="email" placeholder={t('auth.email')} required />
                 <input className="input" name="password" type="password" placeholder={t('auth.password')} required />
-                <input className="input" name="licenseKey" placeholder={t('admin.licenseKeyOptional')} />
                 <select className="input" name="groupId">
                   <option value="">{t('admin.noGroup')}</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
-                    </option>
-                  ))}
-                </select>
-                <select className="input" name="licenseTypeId">
-                  <option value="">{t('admin.noLicenseType')}</option>
-                  {licenseTypes.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
                     </option>
                   ))}
                 </select>
@@ -499,14 +534,6 @@ export function AdminPage(): React.JSX.Element {
                     getValue: (r) => r.groupName || t('admin.noGroup')
                   },
                   {
-                    key: 'licenseTypeId',
-                    label: t('admin.licenseTypes'),
-                    editable: true,
-                    type: 'select',
-                    options: licenseTypeOptions,
-                    getValue: (r) => r.licenseTypeName || t('admin.noLicenseType')
-                  },
-                  {
                     key: 'status',
                     label: t('admin.status'),
                     editable: true,
@@ -516,8 +543,7 @@ export function AdminPage(): React.JSX.Element {
                   }
                 ]}
                 getEditValues={(row) => ({
-                  groupId: row.groupId || '',
-                  licenseTypeId: row.licenseTypeId || ''
+                  groupId: row.groupId || ''
                 })}
                 onSave={async (row, updates) => {
                   const role = roleForSection()
@@ -529,7 +555,6 @@ export function AdminPage(): React.JSX.Element {
                       displayName: updates.displayName,
                       email: updates.email,
                       groupId: updates.groupId || null,
-                      licenseTypeId: updates.licenseTypeId || null,
                       status: updates.status as UserStatus
                     }
                   })

@@ -14,7 +14,8 @@ const resources = {
         exportCourse: 'Export Course',
         exportCourseHint: 'Choose a course to export as a .zip bundle.',
         adminDashboard: 'Admin Dashboard',
-        help: 'Help'
+        help: 'Help',
+        roleViewsMore: 'More role views'
       },
       admin: {
         menu: 'Administration',
@@ -49,13 +50,17 @@ const resources = {
         licenses: 'License keys',
         licensesHint: 'Generate commercial license keys, assign them to users, and export certificates.',
         generateLicense: 'Generate license',
-        licenseCode: 'License code',
+        licenseKey: 'License key',
         expiresAt: 'Expires',
         noExpiration: 'No expiration',
         assignedTo: 'Assigned to',
         unassigned: 'Unassigned',
         exportLicense: 'Export as .txt',
-        licenseGenerated: 'License generated'
+        licenseGenerated: 'License generated',
+        regenerateLicense: 'Regenerate',
+        licenseRegenerated: 'License key regenerated',
+        filterAssignee: 'Filter users…',
+        userHasLicense: 'User already has a license assigned'
       },
       roles: {
         instructorArea: 'Instructor Area',
@@ -177,7 +182,8 @@ const resources = {
         exportCourse: 'Exportar Curso',
         exportCourseHint: 'Elige un curso para exportar como paquete .zip.',
         adminDashboard: 'Panel Admin',
-        help: 'Ayuda'
+        help: 'Ayuda',
+        roleViewsMore: 'Más vistas de rol'
       },
       admin: {
         menu: 'Administración',
@@ -212,13 +218,17 @@ const resources = {
         licenses: 'Claves de licencia',
         licensesHint: 'Genera claves comerciales, asígnalas a usuarios y exporta certificados.',
         generateLicense: 'Generar licencia',
-        licenseCode: 'Código de licencia',
+        licenseKey: 'Clave de licencia',
         expiresAt: 'Expira',
         noExpiration: 'Sin expiración',
         assignedTo: 'Asignado a',
         unassigned: 'Sin asignar',
         exportLicense: 'Exportar como .txt',
-        licenseGenerated: 'Licencia generada'
+        licenseGenerated: 'Licencia generada',
+        regenerateLicense: 'Regenerar',
+        licenseRegenerated: 'Clave regenerada',
+        filterAssignee: 'Filtrar usuarios…',
+        userHasLicense: 'El usuario ya tiene una licencia asignada'
       },
       roles: {
         instructorArea: 'Área del Instructor',

@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
 import { ImportCourseMenu } from './ImportCourseMenu'
+import { RoleViewsMenu } from './RoleViewsMenu'
 import type { CourseCardData } from '@shared/types'
 
 interface AppHeaderProps {
@@ -58,7 +59,9 @@ export function AppHeader({
           </button>
         )}
 
-        {(user?.role === 'instructor' || user?.role === 'admin') && (
+        {user?.role === 'admin' && <RoleViewsMenu />}
+
+        {user?.role === 'instructor' && (
           <button
             type="button"
             className={`btn btn-ghost text-sm ${onInstructor ? 'bg-[var(--color-surface2)]' : ''}`}
@@ -68,7 +71,7 @@ export function AppHeader({
           </button>
         )}
 
-        {(user?.role === 'learner' || user?.role === 'admin') && (
+        {user?.role === 'learner' && (
           <button
             type="button"
             className={`btn btn-ghost text-sm ${onLearner ? 'bg-[var(--color-surface2)]' : ''}`}

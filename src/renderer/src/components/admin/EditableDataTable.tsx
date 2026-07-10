@@ -9,6 +9,7 @@ export interface EditableColumn<T> {
   options?: { value: string; label: string }[]
   getValue: (row: T) => string
   render?: (row: T) => React.ReactNode
+  renderEdit?: (row: T, value: string, onChange: (value: string) => void) => React.ReactNode
 }
 
 interface EditableDataTableProps<T extends { id: string }> {
@@ -61,9 +62,12 @@ export function EditableDataTable<T extends { id: string }>({
 
   const saveEdit = async (row: T): Promise<void> => {
     setSaving(true)
-    await onSave(row, draft)
-    setSaving(false)
-    cancelEdit()
+    try {
+      await onSave(row, draft)
+      cancelEdit()
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -94,7 +98,11 @@ export function EditableDataTable<T extends { id: string }>({
                   {columns.map((col) => (
                     <td key={col.key} className="p-2">
                       {isEditing && col.editable ? (
-                        col.type === 'select' ? (
+                        col.renderEdit ? (
+                          col.renderEdit(row, draft[col.key] ?? '', (v) =>
+                            setDraft((d) => ({ ...d, [col.key]: v }))
+                          )
+                        ) : col.type === 'select' ? (
                           <select
                             className="input py-1 text-sm"
                             value={draft[col.key] ?? ''}

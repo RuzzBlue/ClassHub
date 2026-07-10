@@ -130,6 +130,25 @@ function generateLicenseCode(): string {
   return `CLASSHUB-${seg()}-${seg()}-${seg()}`
 }
 
+async function uniqueLicenseCode(): Promise<string> {
+  for (let i = 0; i < 8; i++) {
+    const code = generateLicenseCode()
+    const exists = await queryOne('SELECT id FROM license_keys WHERE code = $1', [code])
+    if (!exists) return code
+  }
+  throw new Error('Could not generate unique license code')
+}
+
+async function assertUserHasNoOtherLicense(userId: string, exceptLicenseId?: string): Promise<void> {
+  const row = await queryOne<{ id: string }>(
+    exceptLicenseId
+      ? 'SELECT id FROM license_keys WHERE assigned_user_id = $1 AND id != $2 LIMIT 1'
+      : 'SELECT id FROM license_keys WHERE assigned_user_id = $1 LIMIT 1',
+    exceptLicenseId ? [userId, exceptLicenseId] : [userId]
+  )
+  if (row) throw new Error('User already has a license assigned')
+}
+
 function mapLicenseKey(row: {
   id: string
   code: string
@@ -181,12 +200,7 @@ export async function createLicenseKey(
   licenseTypeId: string,
   expiresAt?: string | null
 ): Promise<LicenseKey> {
-  let code = generateLicenseCode()
-  for (let i = 0; i < 5; i++) {
-    const exists = await queryOne('SELECT id FROM license_keys WHERE code = $1', [code])
-    if (!exists) break
-    code = generateLicenseCode()
-  }
+  const code = await uniqueLicenseCode()
   const codeHash = hashLicenseKey(code)
   const row = await queryOne<{ id: string }>(
     `INSERT INTO license_keys (code, code_hash, license_type_id, status, expires_at)
@@ -217,6 +231,12 @@ export async function updateLicenseKey(
   }>('SELECT license_type_id, status, expires_at, assigned_user_id FROM license_keys WHERE id = $1', [id])
   if (!existing) return null
 
+  const nextAssigned =
+    updates.assignedUserId !== undefined ? updates.assignedUserId : existing.assigned_user_id
+  if (nextAssigned) {
+    await assertUserHasNoOtherLicense(nextAssigned, id)
+  }
+
   await query(
     `UPDATE license_keys SET
       license_type_id = $2, status = $3, expires_at = $4, assigned_user_id = $5
@@ -229,6 +249,18 @@ export async function updateLicenseKey(
       updates.assignedUserId !== undefined ? updates.assignedUserId : existing.assigned_user_id
     ]
   )
+  const list = await listLicenseKeys()
+  return list.find((l) => l.id === id) ?? null
+}
+
+export async function regenerateLicenseKey(id: string): Promise<LicenseKey | null> {
+  const existing = await queryOne<{ id: string }>('SELECT id FROM license_keys WHERE id = $1', [id])
+  if (!existing) return null
+
+  const code = await uniqueLicenseCode()
+  const codeHash = hashLicenseKey(code)
+  await query('UPDATE license_keys SET code = $2, code_hash = $3 WHERE id = $1', [id, code, codeHash])
+
   const list = await listLicenseKeys()
   return list.find((l) => l.id === id) ?? null
 }

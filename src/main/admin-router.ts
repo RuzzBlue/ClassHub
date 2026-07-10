@@ -19,7 +19,8 @@ import {
   updateEnrollment,
   updateGroup,
   updateLicenseKey,
-  updateLicenseType
+  updateLicenseType,
+  regenerateLicenseKey
 } from './db/admin-data'
 import { createUser, deleteUser, listUsersByRole, updateUser } from './db/users'
 
@@ -209,12 +210,26 @@ export async function handleAdminRequest(req: ApiRequest): Promise<ApiResponse |
       expiresAt?: string | null
       assignedUserId?: string | null
     }
-    const updated = await updateLicenseKey(id, {
-      ...input,
-      assignedUserId: input.assignedUserId === '' ? null : input.assignedUserId
-    })
-    if (!updated) return err('License not found', 404)
-    return ok(updated)
+    try {
+      const updated = await updateLicenseKey(id, {
+        ...input,
+        assignedUserId: input.assignedUserId === '' ? null : input.assignedUserId
+      })
+      if (!updated) return err('License not found', 404)
+      return ok(updated)
+    } catch (e) {
+      return err((e as Error).message, 400)
+    }
+  }
+  if (method === 'POST' && path.match(/^\/api\/admin\/license-keys\/[^/]+\/regenerate$/)) {
+    const id = path.split('/')[4]
+    try {
+      const updated = await regenerateLicenseKey(id)
+      if (!updated) return err('License not found', 404)
+      return ok(updated)
+    } catch (e) {
+      return err((e as Error).message, 400)
+    }
   }
   if (method === 'DELETE' && path.match(/^\/api\/admin\/license-keys\/[^/]+$/)) {
     const id = path.split('/').pop()!
