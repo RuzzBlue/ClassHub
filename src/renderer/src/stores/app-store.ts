@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { AppSettings, CourseCardData, User } from '@shared/types'
-import type { CourseManifest } from '@shared/schemas'
+import type { CourseManifest, Extra, CourseView } from '@shared/schemas'
 import type { ProgressSnapshot } from '@shared/types'
 import { apiFetch } from '../lib/api-client'
 import { applyTheme } from '../lib/utils'
@@ -80,6 +80,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   }
 }))
 
+import { getInstructorViews, getStudentViews } from '../lib/course-views'
+
+export type CourseContentView =
+  | { kind: 'lesson' }
+  | { kind: 'student-dashboard' }
+  | { kind: 'html'; path: string; menuId: string }
+  | { kind: 'links'; extraId: string; path: string }
+  | { kind: 'files'; extraId: string; path: string; title: string }
+
 interface CourseState {
   manifest: CourseManifest | null
   progress: ProgressSnapshot | null
@@ -87,13 +96,17 @@ interface CourseState {
   currentLessonId: string | null
   currentSection: string | null
   sidebarOpen: boolean
-  activeTab: 'nav' | 'dashboard'
+  activeTab: 'menu' | 'overview'
+  contentView: CourseContentView
+  selectedMenuId: string | null
   loadCourse: (courseId: string) => Promise<void>
   setCurrentLesson: (lessonId: string) => void
   setCurrentSection: (sectionId: string) => void
   updateProgress: (lessonId: string, updates: Record<string, unknown>) => Promise<void>
   toggleSidebar: () => void
-  setActiveTab: (tab: 'nav' | 'dashboard') => void
+  setActiveTab: (tab: 'menu' | 'overview') => void
+  selectRoleView: (view: CourseView) => void
+  selectExtra: (extra: Extra) => void
 }
 
 export const useCourseStore = create<CourseState>((set, get) => ({
@@ -103,7 +116,9 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   currentLessonId: null,
   currentSection: null,
   sidebarOpen: true,
-  activeTab: 'nav',
+  activeTab: 'menu',
+  contentView: { kind: 'lesson' },
+  selectedMenuId: null,
 
   loadCourse: async (courseId) => {
     const [manifestRes, progressRes] = await Promise.all([
@@ -114,12 +129,30 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       })
     ])
     if (manifestRes.ok && manifestRes.data) {
-      set({ manifest: manifestRes.data })
-      const lessons = manifestRes.data.navigation.modules
+      const manifest = manifestRes.data
+      const lessons = manifest.navigation.modules
         .flatMap((m) => m.units.flatMap((u) => u.lessons))
         .sort((a, b) => a.order - b.order)
-      if (lessons.length > 0 && !get().currentLessonId) {
-        set({ currentLessonId: lessons[0].id })
+      const firstLessonId = lessons[0]?.id ?? null
+
+      set({
+        manifest,
+        currentLessonId: firstLessonId,
+        activeTab: 'menu',
+        contentView: { kind: 'lesson' },
+        selectedMenuId: null
+      })
+
+      const user = useAppStore.getState().user
+      const instructorViews =
+        user?.role === 'instructor' || user?.role === 'admin' ? getInstructorViews(manifest) : []
+      const studentViews =
+        user?.role === 'student' || user?.role === 'admin' ? getStudentViews(manifest) : []
+      const roleViews = [...instructorViews, ...studentViews]
+      if (roleViews.length > 0) {
+        get().selectRoleView(roleViews[0])
+      } else if (firstLessonId) {
+        set({ currentLessonId: firstLessonId, contentView: { kind: 'lesson' } })
       }
     }
     if (progressRes.ok && progressRes.data) {
@@ -130,7 +163,13 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     }
   },
 
-  setCurrentLesson: (lessonId) => set({ currentLessonId: lessonId, currentSection: null }),
+  setCurrentLesson: (lessonId) =>
+    set({
+      currentLessonId: lessonId,
+      currentSection: null,
+      contentView: { kind: 'lesson' },
+      selectedMenuId: null
+    }),
   setCurrentSection: (sectionId) => set({ currentSection: sectionId }),
 
   updateProgress: async (lessonId, updates) => {
@@ -145,5 +184,38 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   },
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  setActiveTab: (tab) => set({ activeTab: tab })
+  setActiveTab: (tab) => set({ activeTab: tab }),
+
+  selectRoleView: (view) => {
+    if (view.render === 'app' && view.appPanel === 'student-dashboard') {
+      set({
+        contentView: { kind: 'student-dashboard' },
+        selectedMenuId: view.id
+      })
+      return
+    }
+    set({
+      contentView: { kind: 'html', path: view.entry, menuId: view.id },
+      selectedMenuId: view.id
+    })
+  },
+
+  selectExtra: (extra) => {
+    if (extra.type === 'html') {
+      set({
+        contentView: { kind: 'html', path: extra.entry, menuId: extra.id },
+        selectedMenuId: extra.id
+      })
+    } else if (extra.type === 'links') {
+      set({
+        contentView: { kind: 'links', extraId: extra.id, path: extra.entry },
+        selectedMenuId: extra.id
+      })
+    } else {
+      set({
+        contentView: { kind: 'files', extraId: extra.id, path: extra.entry, title: extra.title },
+        selectedMenuId: extra.id
+      })
+    }
+  }
 }))

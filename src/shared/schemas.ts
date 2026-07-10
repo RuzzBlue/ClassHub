@@ -50,13 +50,29 @@ export const ExtraSchema = z.object({
   title: z.string(),
   type: z.enum(['html', 'files', 'links']),
   entry: z.string(),
+  icon: z.string().default('fa-puzzle-piece'),
   roles: z.array(z.enum(['learner', 'instructor'])),
   order: z.number()
 })
 
+export const CourseViewSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  icon: z.string().default('fa-file'),
+  entry: z.string(),
+  /** When "app", the renderer shows a built-in panel instead of loading entry HTML. */
+  render: z.enum(['html', 'app']).default('html'),
+  appPanel: z.enum(['student-dashboard']).optional()
+})
+
 export const InstructorConfigSchema = z.object({
   dashboard: z.string().optional(),
-  notesRoot: z.string().optional()
+  notesRoot: z.string().optional(),
+  views: z.array(CourseViewSchema).default([])
+})
+
+export const StudentConfigSchema = z.object({
+  views: z.array(CourseViewSchema).default([])
 })
 
 export const CourseManifestSchema = z.object({
@@ -77,6 +93,7 @@ export const CourseManifestSchema = z.object({
   navigation: NavigationSchema,
   extras: z.array(ExtraSchema).default([]),
   instructor: InstructorConfigSchema.optional(),
+  student: StudentConfigSchema.optional(),
   demoLicenseKey: z.string().optional()
 })
 
@@ -85,6 +102,7 @@ export type Module = z.infer<typeof ModuleSchema>
 export type Unit = z.infer<typeof UnitSchema>
 export type Lesson = z.infer<typeof LessonSchema>
 export type Extra = z.infer<typeof ExtraSchema>
+export type CourseView = z.infer<typeof CourseViewSchema>
 export type AccessPolicy = z.infer<typeof AccessPolicySchema>
 
 export const QuizQuestionSchema = z.object({
@@ -150,6 +168,20 @@ export function findLesson(
     }
   }
   return null
+}
+
+export function countQuizzes(manifest: CourseManifest): number {
+  let count = 0
+  for (const mod of manifest.navigation.modules) {
+    if (mod.quiz) count++
+    for (const unit of mod.units) {
+      if (unit.quiz) count++
+      for (const lesson of unit.lessons) {
+        if (lesson.quiz) count++
+      }
+    }
+  }
+  return count
 }
 
 export function getOrderedLessons(manifest: CourseManifest): Lesson[] {

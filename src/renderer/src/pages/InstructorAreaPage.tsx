@@ -2,6 +2,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppLayout } from '../components/AppLayout'
 import { CollapsibleSidebar } from '../components/layout/CollapsibleSidebar'
+import { HubPageHeader } from '../components/layout/HubPageHeader'
 import { PlaceholderPanel } from '../components/layout/PlaceholderPanel'
 import { useSidebarCollapsed } from '../lib/use-sidebar-collapsed'
 import { useAppStore } from '../stores/app-store'
@@ -10,16 +11,18 @@ type InstructorSection =
   | 'dashboard'
   | 'courses'
   | 'creator-lab'
-  | 'assistance'
   | 'grades'
+  | 'attendance'
+  | 'assistance'
   | 'settings'
 
 const SECTIONS: InstructorSection[] = [
   'dashboard',
   'courses',
   'creator-lab',
-  'assistance',
   'grades',
+  'attendance',
+  'assistance',
   'settings'
 ]
 
@@ -44,8 +47,9 @@ export function InstructorAreaPage(): React.JSX.Element {
     { id: 'dashboard', label: t('instructor.dashboard'), icon: 'fa-gauge-high' },
     { id: 'courses', label: t('instructor.courses'), icon: 'fa-book' },
     { id: 'creator-lab', label: t('instructor.creatorLab'), icon: 'fa-flask' },
-    { id: 'assistance', label: t('instructor.assistance'), icon: 'fa-life-ring' },
     { id: 'grades', label: t('instructor.grades'), icon: 'fa-chart-line' },
+    { id: 'attendance', label: t('instructor.attendance'), icon: 'fa-clipboard-check' },
+    { id: 'assistance', label: t('instructor.assistance'), icon: 'fa-life-ring' },
     { id: 'settings', label: t('instructor.settings'), icon: 'fa-gear' }
   ]
 
@@ -55,7 +59,7 @@ export function InstructorAreaPage(): React.JSX.Element {
     <AppLayout>
       <div className="flex flex-1 min-h-0">
         <CollapsibleSidebar
-          title={t('instructor.menu')}
+          title={t('roles.instructorArea')}
           items={sidebarItems}
           activeId={section}
           collapsed={collapsed}
@@ -63,9 +67,10 @@ export function InstructorAreaPage(): React.JSX.Element {
           onSelect={(id) => navigate(`/instructor/${id}`)}
         />
         <main className="flex-1 flex flex-col min-h-0 overflow-auto">
-          <div className="p-6 border-b border-[var(--color-border)]">
-            <h1 className="text-xl font-bold">{activeItem?.label ?? t('roles.instructorArea')}</h1>
-          </div>
+          <HubPageHeader
+            areaTitle={t('roles.instructorArea')}
+            sectionTitle={activeItem?.label ?? t('instructor.dashboard')}
+          />
           <PlaceholderPanel
             title={t('roles.instructorArea')}
             hint={t('roles.instructorAreaHint')}

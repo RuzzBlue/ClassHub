@@ -31,10 +31,12 @@ export function CollapsibleSidebar({
         collapsed ? 'w-14' : 'w-56'
       }`}
     >
-      <div className={`flex items-center border-b border-[var(--color-border)] ${collapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'}`}>
-        {!collapsed && (
-          <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{title}</p>
-        )}
+      <div
+        className={`sidebar-title-bar flex items-center border-b border-[var(--color-border)] ${
+          collapsed ? 'justify-center px-2' : 'justify-between px-3'
+        }`}
+      >
+        {!collapsed && <p className="hub-area-title truncate">{title}</p>}
         <button
           type="button"
           className="btn btn-ghost p-2 text-xs cursor-pointer shrink-0"

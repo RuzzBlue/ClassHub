@@ -63,12 +63,17 @@ export function CourseCard({ course, onOpen, onRemove }: Props): React.JSX.Eleme
                 </div>
                 <span className="text-xs text-[var(--color-text-muted)]">{course.progress}%</span>
               </div>
-              <div className="mt-auto flex items-end justify-between pt-2">
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  {course.moduleCount} {t('library.modules')} · {course.lessonCount} {t('library.lessons')}
-                </p>
+              <div className="mt-auto flex items-stretch gap-2 pt-2">
+                <div className="w-1/3 text-xs text-[var(--color-text-muted)] leading-tight flex flex-col justify-center shrink-0">
+                  <p>
+                    {course.moduleCount} {t('library.modules')}
+                  </p>
+                  <p>
+                    {course.lessonCount} {t('library.lessons')}
+                  </p>
+                </div>
                 <button
-                  className="btn btn-primary text-xs py-1.5 px-3"
+                  className="btn btn-primary w-2/3 justify-center"
                   onClick={(e) => {
                     e.stopPropagation()
                     onOpen()

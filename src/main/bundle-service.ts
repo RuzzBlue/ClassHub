@@ -30,6 +30,12 @@ function collectReferencedFiles(manifest: CourseManifest): string[] {
     files.push(extra.entry)
   }
   if (manifest.instructor?.dashboard) files.push(manifest.instructor.dashboard)
+  for (const view of manifest.instructor?.views ?? []) {
+    files.push(view.entry)
+  }
+  for (const view of manifest.student?.views ?? []) {
+    files.push(view.entry)
+  }
   return files
 }
 

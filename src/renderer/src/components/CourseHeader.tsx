@@ -1,41 +1,31 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
-import { ImportCourseMenu } from './ImportCourseMenu'
 import { AdminDashboardMenu } from './AdminDashboardMenu'
-import type { CourseCardData } from '@shared/types'
 
-interface AppHeaderProps {
-  courses: CourseCardData[]
-  onCoursesChange: () => Promise<void>
+interface CourseHeaderProps {
+  onPresenterClick?: () => void
+  showPresenter?: boolean
   onLoginClick: () => void
   onProfileClick: () => void
-  showImport?: boolean
-  search?: string
-  onSearchChange?: (value: string) => void
 }
 
-export function AppHeader({
-  courses,
-  onCoursesChange,
+export function CourseHeader({
+  onPresenterClick,
+  showPresenter = false,
   onLoginClick,
-  onProfileClick,
-  showImport = true,
-  search,
-  onSearchChange
-}: AppHeaderProps): React.JSX.Element {
+  onProfileClick
+}: CourseHeaderProps): React.JSX.Element {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAppStore()
-  const onInstructor = location.pathname.startsWith('/instructor')
-  const onStudentHub = location.pathname.startsWith('/student-hub')
   const onLibrary = location.pathname === '/'
 
   return (
     <header className="app-top-header flex items-center gap-4 px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0 flex-nowrap relative z-40 overflow-visible">
       <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
-        <i className="fas fa-graduation-cap text-xl" style={{ color: 'var(--accent)' }} />
+        <i className="fas fa-house text-xl" style={{ color: 'var(--accent)' }} />
         <span className="font-bold text-lg">{t('app.name')}</span>
       </div>
 
@@ -53,7 +43,7 @@ export function AppHeader({
         {user?.role === 'instructor' && (
           <button
             type="button"
-            className={`btn btn-ghost text-sm ${onInstructor ? 'bg-[var(--color-surface2)]' : ''}`}
+            className={`btn btn-ghost text-sm ${location.pathname.startsWith('/instructor') ? 'bg-[var(--color-surface2)]' : ''}`}
             onClick={() => navigate('/instructor/dashboard')}
           >
             <i className="fas fa-chalkboard-teacher" /> {t('roles.instructorArea')}
@@ -63,29 +53,19 @@ export function AppHeader({
         {user?.role === 'student' && (
           <button
             type="button"
-            className={`btn btn-ghost text-sm ${onStudentHub ? 'bg-[var(--color-surface2)]' : ''}`}
+            className={`btn btn-ghost text-sm ${location.pathname.startsWith('/student-hub') ? 'bg-[var(--color-surface2)]' : ''}`}
             onClick={() => navigate('/student-hub/dashboard')}
           >
             <i className="fas fa-user-graduate" /> {t('roles.studentHub')}
           </button>
         )}
-
-        {showImport && (
-          <ImportCourseMenu courses={courses} onCoursesChange={onCoursesChange} />
-        )}
       </nav>
 
       <div className="ml-auto flex items-center gap-2 shrink-0">
-        {onSearchChange && (
-          <div className="flex items-center gap-2 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 w-64">
-            <i className="fas fa-search text-[var(--color-text-muted)] text-sm shrink-0" />
-            <input
-              className="bg-transparent border-none outline-none text-sm w-full text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]"
-              placeholder={t('library.search')}
-              value={search ?? ''}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
+        {showPresenter && onPresenterClick && (
+          <button type="button" className="btn btn-ghost text-sm cursor-pointer" onClick={onPresenterClick}>
+            <i className="fas fa-chalkboard-teacher" /> {t('course.presenter')}
+          </button>
         )}
         {user ? (
           <button

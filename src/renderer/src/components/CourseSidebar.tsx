@@ -5,7 +5,10 @@ import { useAppStore } from '../stores/app-store'
 import { useCourseStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
 import { courseRoleForUser } from '../lib/role-label'
+import { getInstructorViews, getStudentViews } from '../lib/course-views'
 import { cn } from '../lib/utils'
+import { CourseProgressWidget } from './course/CourseProgressWidget'
+import { CourseCurriculumOverview } from './course/CourseCurriculumOverview'
 
 interface Props {
   manifest: CourseManifest
@@ -23,8 +26,19 @@ export function CourseSidebar({
   accessMap
 }: Props): React.JSX.Element {
   const { t } = useTranslation()
-  const { sidebarOpen, activeTab, setActiveTab } = useCourseStore()
+  const { sidebarOpen, activeTab, setActiveTab, toggleSidebar, selectedMenuId, selectRoleView, selectExtra } =
+    useCourseStore()
   const { user } = useAppStore()
+
+  const courseRole = courseRoleForUser(user?.role)
+  const instructorViews =
+    user?.role === 'instructor' || user?.role === 'admin' ? getInstructorViews(manifest) : []
+  const studentViews = user?.role === 'student' || user?.role === 'admin' ? getStudentViews(manifest) : []
+  const roleViews = [...instructorViews, ...studentViews]
+
+  const extras = manifest.extras
+    .filter((e) => user?.role === 'admin' || e.roles.includes(courseRole))
+    .sort((a, b) => a.order - b.order)
 
   const getLessonStatus = (lessonId: string): string => {
     const lp = progress?.lessons.find((l) => l.lessonId === lessonId)
@@ -33,134 +47,103 @@ export function CourseSidebar({
     return 'in_progress'
   }
 
-  const statusIcon = (status: string, locked: boolean): React.JSX.Element => {
-    if (locked) return <i className="fas fa-lock text-xs text-[var(--color-danger)]" />
-    if (status === 'completed') return <i className="fas fa-check-circle text-xs text-[var(--color-success)]" />
-    if (status === 'in_progress') return <i className="fas fa-circle-half-stroke text-xs text-[var(--color-warning)]" />
-    return <i className="far fa-circle text-xs text-[var(--color-text-muted)]" />
+  if (!sidebarOpen) {
+    return (
+      <button
+        type="button"
+        className="course-sidebar-expand"
+        onClick={toggleSidebar}
+        aria-label={t('nav.expandSidebar')}
+        title={t('nav.expandSidebar')}
+      >
+        <i className="fas fa-chevron-right" />
+      </button>
+    )
   }
 
-  if (!sidebarOpen) return <div />
-
   return (
-    <aside className="w-72 border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col shrink-0">
-      <div className="flex border-b border-[var(--color-border)]">
+    <aside className="course-sidebar w-72 border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col shrink-0">
+      <div className="flex border-b border-[var(--color-border)] items-stretch">
         <button
-          className={cn('flex-1 py-2 text-sm', activeTab === 'nav' && 'border-b-2')}
-          style={activeTab === 'nav' ? { borderColor: 'var(--accent)' } : {}}
-          onClick={() => setActiveTab('nav')}
+          type="button"
+          className={cn('course-sidebar-tab flex-1', activeTab === 'menu' && 'course-sidebar-tab-active')}
+          onClick={() => setActiveTab('menu')}
+        >
+          {t('course.menu')}
+        </button>
+        <button
+          type="button"
+          className={cn('course-sidebar-tab flex-1', activeTab === 'overview' && 'course-sidebar-tab-active')}
+          onClick={() => setActiveTab('overview')}
         >
           {t('course.overview')}
         </button>
         <button
-          className={cn('flex-1 py-2 text-sm', activeTab === 'dashboard' && 'border-b-2')}
-          style={activeTab === 'dashboard' ? { borderColor: 'var(--accent)' } : {}}
-          onClick={() => setActiveTab('dashboard')}
+          type="button"
+          className="btn btn-ghost px-3 border-l border-[var(--color-border)] shrink-0"
+          onClick={toggleSidebar}
+          aria-label={t('nav.collapseSidebar')}
+          title={t('nav.collapseSidebar')}
         >
-          {t('course.dashboard')}
+          <i className="fas fa-chevron-left" />
         </button>
       </div>
 
-      {activeTab === 'nav' ? (
-        <div className="flex-1 overflow-auto p-3">
-          {manifest.navigation.modules
-            .sort((a, b) => a.order - b.order)
-            .map((mod) => (
-              <div key={mod.id} className="mb-3">
-                <div className="text-xs font-semibold uppercase text-[var(--color-text-muted)] mb-1 px-1">
-                  {mod.title}
-                </div>
-                {mod.units
-                  .sort((a, b) => a.order - b.order)
-                  .map((unit) => (
-                    <div key={unit.id} className="ml-1 mb-2">
-                      <div className="text-xs text-[var(--color-text-muted)] px-1 mb-0.5">{unit.title}</div>
-                      {unit.lessons
-                        .sort((a, b) => a.order - b.order)
-                        .map((lesson) => {
-                          const locked = !accessMap[lesson.id]
-                          const status = getLessonStatus(lesson.id)
-                          return (
-                            <button
-                              key={lesson.id}
-                              className={cn(
-                                'w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 hover:bg-[var(--color-surface2)]',
-                                currentLessonId === lesson.id && 'bg-[var(--color-surface2)]'
-                              )}
-                              onClick={() => !locked && onSelectLesson(lesson.id)}
-                              disabled={locked}
-                            >
-                              {statusIcon(status, locked)}
-                              <span className={cn('truncate', locked && 'opacity-50')}>{lesson.title}</span>
-                              {lesson.quiz && (
-                                <i className="fas fa-question-circle text-xs text-[var(--color-text-muted)] ml-auto" />
-                              )}
-                            </button>
-                          )
-                        })}
-                    </div>
-                  ))}
+      {activeTab === 'menu' ? (
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="p-3 border-b border-[var(--color-border)]">
+            <CourseProgressWidget manifest={manifest} progress={progress} />
+          </div>
+
+          <div className="flex-1 overflow-auto p-2 space-y-1 min-h-0">
+            {roleViews.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  className={cn(
+                    'course-sidebar-menu-item',
+                    selectedMenuId === view.id && 'course-sidebar-menu-item-active'
+                  )}
+                  onClick={() => selectRoleView(view)}
+                >
+                  <i className={`fas ${view.icon} course-sidebar-menu-icon`} />
+                  <span className="truncate">{view.title}</span>
+                </button>
+              ))}
+          </div>
+
+          {extras.length > 0 && (
+            <div className="border-t border-[var(--color-border)] p-2 mt-auto shrink-0">
+              <p className="course-sidebar-label px-2 mb-2">{t('course.extras')}</p>
+              <div className="space-y-1">
+                {extras.map((extra) => (
+                  <button
+                    key={extra.id}
+                    type="button"
+                    className={cn(
+                      'course-sidebar-menu-item',
+                      selectedMenuId === extra.id && 'course-sidebar-menu-item-active'
+                    )}
+                    onClick={() => selectExtra(extra)}
+                  >
+                    <i className={`fas ${extra.icon} course-sidebar-menu-icon`} />
+                    <span className="truncate">{extra.title}</span>
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
         </div>
       ) : (
-        <CourseDashboard manifest={manifest} />
-      )}
-
-      {manifest.extras.length > 0 && (
-        <div className="border-t border-[var(--color-border)] p-3">
-          <div className="text-xs font-semibold text-[var(--color-text-muted)] mb-2">{t('course.extras')}</div>
-          {manifest.extras
-            .filter((e) => e.roles.includes(courseRoleForUser(user?.role)))
-            .sort((a, b) => a.order - b.order)
-            .map((extra) => (
-              <button key={extra.id} className="btn btn-ghost w-full text-sm justify-start mb-1">
-                <i className="fas fa-puzzle-piece" /> {extra.title}
-              </button>
-            ))}
-        </div>
+        <CourseCurriculumOverview
+          manifest={manifest}
+          currentLessonId={currentLessonId}
+          accessMap={accessMap}
+          getLessonStatus={getLessonStatus}
+          onSelectLesson={onSelectLesson}
+        />
       )}
     </aside>
-  )
-}
-
-function CourseDashboard({ manifest }: { manifest: CourseManifest }): React.JSX.Element {
-  const { t } = useTranslation()
-  const { progress, grades } = useCourseStore()
-  const completed = progress?.lessons.filter((l) => l.status === 'completed').length ?? 0
-  const total = manifest.navigation.modules.reduce((a, m) => a + m.units.reduce((b, u) => b + u.lessons.length, 0), 0)
-
-  return (
-    <div className="flex-1 overflow-auto p-4 space-y-4">
-      <div className="card p-4">
-        <div className="text-3xl font-bold" style={{ color: 'var(--accent)' }}>
-          {progress?.course?.percent ?? 0}%
-        </div>
-        <div className="text-sm text-[var(--color-text-muted)]">{t('library.progress')}</div>
-        <div className="text-xs mt-1">
-          {completed}/{total} {t('library.lessons')}
-        </div>
-      </div>
-      {grades.length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold mb-2">{t('course.quiz')}</h4>
-          {grades.map((g) => (
-            <div key={g.lessonId} className="flex justify-between text-sm py-1 border-b border-[var(--color-border)]">
-              <span className="truncate mr-2">{g.lessonTitle}</span>
-              <span>
-                {g.score !== null ? (
-                  <span className={g.passed ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}>
-                    {g.score}%
-                  </span>
-                ) : (
-                  '—'
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 

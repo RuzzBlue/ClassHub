@@ -1,30 +1,39 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCourseStore } from '../stores/app-store'
 import { useAppStore } from '../stores/app-store'
 import { CourseSidebar, checkAccess } from '../components/CourseSidebar'
+import { CourseHeader } from '../components/CourseHeader'
 import { LessonViewer } from '../components/LessonViewer'
+import { CourseHtmlPanel } from '../components/course/CourseHtmlPanel'
+import {
+  StudentCourseDashboard,
+  CourseLinksPanel,
+  CourseFilesPanel
+} from '../components/course/StudentCourseDashboard'
+import { LoginModal } from '../components/LoginModal'
+import { ProfileModal } from '../components/ProfileModal'
 import { apiFetch, openPresenter } from '../lib/api-client'
 import { findLesson } from '@shared/schemas'
 
 export function CoursePage(): React.JSX.Element {
   const { courseId } = useParams<{ courseId: string }>()
-  const navigate = useNavigate()
   const { t } = useTranslation()
   const { user } = useAppStore()
   const {
     manifest,
     currentLessonId,
-    sidebarOpen,
     progress,
+    contentView,
     loadCourse,
-    setCurrentLesson,
-    toggleSidebar
+    setCurrentLesson
   } = useCourseStore()
   const [accessMap, setAccessMap] = useState<Record<string, boolean>>({})
   const [licenseKey, setLicenseKey] = useState('')
   const [showLicense, setShowLicense] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     if (courseId) loadCourse(courseId)
@@ -54,8 +63,10 @@ export function CoursePage(): React.JSX.Element {
     )
   }
 
-  const lessonInfo = currentLessonId ? findLesson(manifest, currentLessonId) : null
-  const isLocked = currentLessonId ? !accessMap[currentLessonId] : false
+  const lessonInfo =
+    contentView.kind === 'lesson' && currentLessonId ? findLesson(manifest, currentLessonId) : null
+  const isLocked = lessonInfo && currentLessonId ? !accessMap[currentLessonId] : false
+  const showPresenter = user?.role === 'instructor' || user?.role === 'admin'
 
   const handleActivateLicense = async (): Promise<void> => {
     const res = await apiFetch<{ valid: boolean }>({
@@ -84,27 +95,70 @@ export function CoursePage(): React.JSX.Element {
     }
   }
 
+  const renderMainContent = (): React.JSX.Element => {
+    if (contentView.kind === 'student-dashboard') {
+      return <StudentCourseDashboard courseId={courseId} manifest={manifest} />
+    }
+    if (contentView.kind === 'html') {
+      return <CourseHtmlPanel courseId={courseId} path={contentView.path} />
+    }
+    if (contentView.kind === 'links') {
+      return <CourseLinksPanel courseId={courseId} path={contentView.path} />
+    }
+    if (contentView.kind === 'files') {
+      return (
+        <CourseFilesPanel courseId={courseId} path={contentView.path} title={contentView.title} />
+      )
+    }
+
+    if (isLocked && currentLessonId) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="card p-8 text-center max-w-md">
+            <i className="fas fa-lock text-4xl text-[var(--color-danger)] mb-4" />
+            <p className="mb-4">{t('course.enterLicense')}</p>
+            <input
+              className="input mb-3"
+              placeholder={t('course.licensePlaceholder')}
+              value={licenseKey}
+              onChange={(e) => setLicenseKey(e.target.value)}
+            />
+            <button className="btn btn-primary w-full justify-center" onClick={handleActivateLicense}>
+              {t('settings.activate')}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    if (lessonInfo) {
+      return (
+        <LessonViewer
+          courseId={courseId}
+          courseTitle={manifest.title}
+          lessonEntry={lessonInfo.lesson.entry}
+          quizPath={lessonInfo.lesson.quiz}
+        />
+      )
+    }
+
+    return (
+      <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] p-8 text-center">
+        {manifest.description}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-screen">
-      <header className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
-        <button className="btn btn-ghost p-2" onClick={() => navigate('/')}>
-          <i className="fas fa-arrow-left" />
-        </button>
-        <button className="btn btn-ghost p-2" onClick={toggleSidebar}>
-          <i className={`fas ${sidebarOpen ? 'fa-indent' : 'fa-outdent'}`} />
-        </button>
-        <h1 className="font-semibold truncate flex-1">{manifest.title}</h1>
-        {(user?.role === 'instructor' || user?.role === 'admin') && (
-          <button className="btn btn-ghost text-sm" onClick={handlePresenter}>
-            <i className="fas fa-chalkboard-teacher" /> {t('course.presenter')}
-          </button>
-        )}
-        <button className="btn btn-ghost text-sm" onClick={() => setShowLicense(true)}>
-          <i className="fas fa-key" />
-        </button>
-      </header>
+      <CourseHeader
+        showPresenter={showPresenter}
+        onPresenterClick={handlePresenter}
+        onLoginClick={() => setLoginOpen(true)}
+        onProfileClick={() => setProfileOpen(true)}
+      />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <CourseSidebar
           manifest={manifest}
           progress={progress}
@@ -112,35 +166,7 @@ export function CoursePage(): React.JSX.Element {
           onSelectLesson={setCurrentLesson}
           accessMap={accessMap}
         />
-        <main className="flex-1 overflow-hidden">
-          {isLocked ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="card p-8 text-center max-w-md">
-                <i className="fas fa-lock text-4xl text-[var(--color-danger)] mb-4" />
-                <p className="mb-4">{t('course.enterLicense')}</p>
-                <input
-                  className="input mb-3"
-                  placeholder={t('course.licensePlaceholder')}
-                  value={licenseKey}
-                  onChange={(e) => setLicenseKey(e.target.value)}
-                />
-                <button className="btn btn-primary w-full justify-center" onClick={handleActivateLicense}>
-                  {t('settings.activate')}
-                </button>
-              </div>
-            </div>
-          ) : lessonInfo ? (
-            <LessonViewer
-              courseId={courseId}
-              lessonEntry={lessonInfo.lesson.entry}
-              quizPath={lessonInfo.lesson.quiz}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
-              {manifest.description}
-            </div>
-          )}
-        </main>
+        <main className="flex-1 overflow-hidden min-w-0">{renderMainContent()}</main>
       </div>
 
       {showLicense && (
@@ -159,6 +185,9 @@ export function CoursePage(): React.JSX.Element {
           </div>
         </div>
       )}
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   )
 }

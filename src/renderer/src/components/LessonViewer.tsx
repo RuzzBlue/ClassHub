@@ -6,11 +6,12 @@ import { QuizPanel } from './QuizPanel'
 
 interface Props {
   courseId: string
+  courseTitle: string
   lessonEntry: string
   quizPath?: string | null
 }
 
-export function LessonViewer({ courseId, lessonEntry, quizPath }: Props): React.JSX.Element {
+export function LessonViewer({ courseId, courseTitle, lessonEntry, quizPath }: Props): React.JSX.Element {
   const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const { currentSection, setCurrentSection, updateProgress, currentLessonId } = useCourseStore()
@@ -88,23 +89,24 @@ export function LessonViewer({ courseId, lessonEntry, quizPath }: Props): React.
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
-        <div className="flex gap-1">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
+        <div className="flex gap-1 min-w-0">
           {sections.map((s, i) => (
             <button
               key={s.id}
-              className="w-2 h-2 rounded-full transition-all"
+              className="w-2 h-2 rounded-full transition-all shrink-0"
               style={{ background: i === activeIndex ? 'var(--accent)' : 'var(--color-border)' }}
               onClick={() => showSection(i)}
               title={s.title}
             />
           ))}
         </div>
-        <div className="flex gap-2">
+        <h2 className="font-semibold text-center truncate px-4 max-w-md">{courseTitle}</h2>
+        <div className="flex gap-2 justify-end min-w-0">
           <button className="btn btn-ghost text-sm" onClick={goPrev} disabled={activeIndex === 0}>
             <i className="fas fa-chevron-left" /> {t('course.prevSection')}
           </button>
-          <span className="text-sm text-[var(--color-text-muted)] self-center">
+          <span className="text-sm text-[var(--color-text-muted)] self-center whitespace-nowrap">
             {activeIndex + 1}/{sections.length}
           </span>
           <button className="btn btn-ghost text-sm" onClick={goNext}>
