@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
+import { PasswordField } from './PasswordField'
 import type { User } from '@shared/types'
 
 interface Props {
@@ -41,7 +42,7 @@ export function LoginModal({ open, onClose }: Props): React.JSX.Element | null {
       <div className="card p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{t('auth.login')}</h2>
-          <button className="btn btn-ghost p-2" onClick={onClose}>
+          <button type="button" className="btn btn-ghost p-2 cursor-pointer" onClick={onClose}>
             <i className="fas fa-times" />
           </button>
         </div>
@@ -58,18 +59,21 @@ export function LoginModal({ open, onClose }: Props): React.JSX.Element | null {
           </div>
           <div>
             <label className="text-sm text-[var(--color-text-muted)]">{t('auth.password')}</label>
-            <input
-              className="input mt-1"
-              type="password"
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              onChange={setPassword}
               autoComplete="current-password"
+              onKeyDown={(e) => e.key === 'Enter' && void handleLogin()}
             />
           </div>
           {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
           <p className="text-xs text-[var(--color-text-muted)]">{t('auth.demoHint')}</p>
-          <button className="btn btn-primary w-full justify-center" onClick={handleLogin} disabled={loading}>
+          <button
+            type="button"
+            className="btn btn-primary w-full justify-center cursor-pointer"
+            onClick={handleLogin}
+            disabled={loading}
+          >
             {loading ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-sign-in-alt" />}
             {t('auth.signIn')}
           </button>

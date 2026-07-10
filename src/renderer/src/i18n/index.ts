@@ -43,7 +43,19 @@ const resources = {
         learner: 'Learner',
         selectInstructor: 'Select instructor',
         selectLearner: 'Select learner',
-        enroll: 'Enroll learner'
+        enroll: 'Enroll learner',
+        filterTable: 'Filter table…',
+        noRows: 'No matching rows',
+        licenses: 'License keys',
+        licensesHint: 'Generate commercial license keys, assign them to users, and export certificates.',
+        generateLicense: 'Generate license',
+        licenseCode: 'License code',
+        expiresAt: 'Expires',
+        noExpiration: 'No expiration',
+        assignedTo: 'Assigned to',
+        unassigned: 'Unassigned',
+        exportLicense: 'Export as .txt',
+        licenseGenerated: 'License generated'
       },
       roles: {
         instructorArea: 'Instructor Area',
@@ -111,6 +123,8 @@ const resources = {
         leaveBlank: 'Leave blank to keep current',
         invalidCredentials: 'Invalid email or password',
         passwordMismatch: 'Passwords do not match',
+        showPassword: 'Show password',
+        hidePassword: 'Hide password',
         demoHint: 'Default admin: admin@classhub.local / admin123 (first run)'
       },
       course: {
@@ -192,7 +206,19 @@ const resources = {
         learner: 'Estudiante',
         selectInstructor: 'Seleccionar instructor',
         selectLearner: 'Seleccionar estudiante',
-        enroll: 'Inscribir estudiante'
+        enroll: 'Inscribir estudiante',
+        filterTable: 'Filtrar tabla…',
+        noRows: 'Sin filas coincidentes',
+        licenses: 'Claves de licencia',
+        licensesHint: 'Genera claves comerciales, asígnalas a usuarios y exporta certificados.',
+        generateLicense: 'Generar licencia',
+        licenseCode: 'Código de licencia',
+        expiresAt: 'Expira',
+        noExpiration: 'Sin expiración',
+        assignedTo: 'Asignado a',
+        unassigned: 'Sin asignar',
+        exportLicense: 'Exportar como .txt',
+        licenseGenerated: 'Licencia generada'
       },
       roles: {
         instructorArea: 'Área del Instructor',
@@ -260,6 +286,8 @@ const resources = {
         leaveBlank: 'Dejar vacío para mantener la actual',
         invalidCredentials: 'Correo o contraseña incorrectos',
         passwordMismatch: 'Las contraseñas no coinciden',
+        showPassword: 'Mostrar contraseña',
+        hidePassword: 'Ocultar contraseña',
         demoHint: 'Demo: demo@classhub.local / demo123'
       },
       course: {

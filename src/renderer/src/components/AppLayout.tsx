@@ -7,9 +7,16 @@ import { ProfileModal } from './ProfileModal'
 interface AppLayoutProps {
   children: ReactNode
   showImport?: boolean
+  search?: string
+  onSearchChange?: (value: string) => void
 }
 
-export function AppLayout({ children, showImport = true }: AppLayoutProps): React.JSX.Element {
+export function AppLayout({
+  children,
+  showImport = true,
+  search,
+  onSearchChange
+}: AppLayoutProps): React.JSX.Element {
   const { courses, loadCourses } = useAppStore()
   const [loginOpen, setLoginOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -26,6 +33,8 @@ export function AppLayout({ children, showImport = true }: AppLayoutProps): Reac
         onLoginClick={() => setLoginOpen(true)}
         onProfileClick={() => setProfileOpen(true)}
         showImport={showImport}
+        search={search}
+        onSearchChange={onSearchChange}
       />
       {children}
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />

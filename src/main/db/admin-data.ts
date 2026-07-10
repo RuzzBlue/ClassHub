@@ -1,4 +1,6 @@
-import type { CourseEnrollment, Group, LicenseType } from '@shared/types'
+import { randomBytes } from 'crypto'
+import type { CourseEnrollment, Group, LicenseKey, LicenseKeyStatus, LicenseType } from '@shared/types'
+import { hashLicenseKey } from './migrate'
 import { query, queryOne } from './pool'
 
 export async function listGroups(): Promise<Group[]> {
@@ -104,7 +106,134 @@ export async function createEnrollment(
   return created
 }
 
+export async function updateEnrollment(
+  id: string,
+  courseId: string,
+  instructorId: string,
+  learnerId: string
+): Promise<CourseEnrollment | null> {
+  await query(
+    `UPDATE course_enrollments SET course_id = $2, instructor_id = $3, learner_id = $4 WHERE id = $1`,
+    [id, courseId.trim(), instructorId, learnerId]
+  )
+  const list = await listEnrollments()
+  return list.find((e) => e.id === id) ?? null
+}
+
 export async function deleteEnrollment(id: string): Promise<boolean> {
   const rows = await query('DELETE FROM course_enrollments WHERE id = $1 RETURNING id', [id])
+  return rows.length > 0
+}
+
+function generateLicenseCode(): string {
+  const seg = () => randomBytes(2).toString('hex').toUpperCase()
+  return `CLASSHUB-${seg()}-${seg()}-${seg()}`
+}
+
+function mapLicenseKey(row: {
+  id: string
+  code: string
+  license_type_id: string
+  license_type_name: string
+  status: LicenseKeyStatus
+  expires_at: string | null
+  assigned_user_id: string | null
+  assigned_user_name: string | null
+  created_at: string
+}): LicenseKey {
+  return {
+    id: row.id,
+    code: row.code,
+    licenseTypeId: row.license_type_id,
+    licenseTypeName: row.license_type_name,
+    status: row.status,
+    expiresAt: row.expires_at,
+    assignedUserId: row.assigned_user_id,
+    assignedUserName: row.assigned_user_name,
+    createdAt: row.created_at
+  }
+}
+
+export async function listLicenseKeys(): Promise<LicenseKey[]> {
+  const rows = await query<{
+    id: string
+    code: string
+    license_type_id: string
+    license_type_name: string
+    status: LicenseKeyStatus
+    expires_at: string | null
+    assigned_user_id: string | null
+    assigned_user_name: string | null
+    created_at: string
+  }>(
+    `SELECT lk.id, lk.code, lk.license_type_id, lt.name AS license_type_name,
+            lk.status, lk.expires_at, lk.assigned_user_id, u.display_name AS assigned_user_name,
+            lk.created_at
+     FROM license_keys lk
+     JOIN license_types lt ON lt.id = lk.license_type_id
+     LEFT JOIN users u ON u.id = lk.assigned_user_id
+     ORDER BY lk.created_at DESC`
+  )
+  return rows.map(mapLicenseKey)
+}
+
+export async function createLicenseKey(
+  licenseTypeId: string,
+  expiresAt?: string | null
+): Promise<LicenseKey> {
+  let code = generateLicenseCode()
+  for (let i = 0; i < 5; i++) {
+    const exists = await queryOne('SELECT id FROM license_keys WHERE code = $1', [code])
+    if (!exists) break
+    code = generateLicenseCode()
+  }
+  const codeHash = hashLicenseKey(code)
+  const row = await queryOne<{ id: string }>(
+    `INSERT INTO license_keys (code, code_hash, license_type_id, status, expires_at)
+     VALUES ($1, $2, $3, 'active', $4) RETURNING id`,
+    [code, codeHash, licenseTypeId, expiresAt || null]
+  )
+  if (!row) throw new Error('Failed to create license')
+  const list = await listLicenseKeys()
+  const created = list.find((l) => l.id === row.id)
+  if (!created) throw new Error('License not found after create')
+  return created
+}
+
+export async function updateLicenseKey(
+  id: string,
+  updates: {
+    licenseTypeId?: string
+    status?: LicenseKeyStatus
+    expiresAt?: string | null
+    assignedUserId?: string | null
+  }
+): Promise<LicenseKey | null> {
+  const existing = await queryOne<{
+    license_type_id: string
+    status: LicenseKeyStatus
+    expires_at: string | null
+    assigned_user_id: string | null
+  }>('SELECT license_type_id, status, expires_at, assigned_user_id FROM license_keys WHERE id = $1', [id])
+  if (!existing) return null
+
+  await query(
+    `UPDATE license_keys SET
+      license_type_id = $2, status = $3, expires_at = $4, assigned_user_id = $5
+     WHERE id = $1`,
+    [
+      id,
+      updates.licenseTypeId ?? existing.license_type_id,
+      updates.status ?? existing.status,
+      updates.expiresAt !== undefined ? updates.expiresAt : existing.expires_at,
+      updates.assignedUserId !== undefined ? updates.assignedUserId : existing.assigned_user_id
+    ]
+  )
+  const list = await listLicenseKeys()
+  return list.find((l) => l.id === id) ?? null
+}
+
+export async function deleteLicenseKey(id: string): Promise<boolean> {
+  const rows = await query('DELETE FROM license_keys WHERE id = $1 RETURNING id', [id])
   return rows.length > 0
 }

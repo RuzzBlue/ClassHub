@@ -6,14 +6,19 @@ import { getUserById } from './db/users'
 import {
   createEnrollment,
   createGroup,
+  createLicenseKey,
   createLicenseType,
   deleteEnrollment,
   deleteGroup,
+  deleteLicenseKey,
   deleteLicenseType,
   listEnrollments,
   listGroups,
+  listLicenseKeys,
   listLicenseTypes,
+  updateEnrollment,
   updateGroup,
+  updateLicenseKey,
   updateLicenseType
 } from './db/admin-data'
 import { createUser, deleteUser, listUsersByRole, updateUser } from './db/users'
@@ -162,9 +167,58 @@ export async function handleAdminRequest(req: ApiRequest): Promise<ApiResponse |
       return err((e as Error).message, 400)
     }
   }
+  if (method === 'PUT' && path.match(/^\/api\/admin\/enrollments\/[^/]+$/)) {
+    const id = path.split('/').pop()!
+    const { courseId, instructorId, learnerId } = body as {
+      courseId: string
+      instructorId: string
+      learnerId: string
+    }
+    try {
+      const updated = await updateEnrollment(id, courseId, instructorId, learnerId)
+      if (!updated) return err('Enrollment not found', 404)
+      return ok(updated)
+    } catch (e) {
+      return err((e as Error).message, 400)
+    }
+  }
   if (method === 'DELETE' && path.match(/^\/api\/admin\/enrollments\/[^/]+$/)) {
     const id = path.split('/').pop()!
     if (!(await deleteEnrollment(id))) return err('Enrollment not found', 404)
+    return ok({ removed: true })
+  }
+
+  // License keys
+  if (method === 'GET' && path === '/api/admin/license-keys') {
+    return ok(await listLicenseKeys())
+  }
+  if (method === 'POST' && path === '/api/admin/license-keys') {
+    const { licenseTypeId, expiresAt } = body as { licenseTypeId: string; expiresAt?: string | null }
+    if (!licenseTypeId) return err('licenseTypeId required', 400)
+    try {
+      return ok(await createLicenseKey(licenseTypeId, expiresAt || null))
+    } catch (e) {
+      return err((e as Error).message, 400)
+    }
+  }
+  if (method === 'PUT' && path.match(/^\/api\/admin\/license-keys\/[^/]+$/)) {
+    const id = path.split('/').pop()!
+    const input = body as {
+      licenseTypeId?: string
+      status?: 'active' | 'inactive'
+      expiresAt?: string | null
+      assignedUserId?: string | null
+    }
+    const updated = await updateLicenseKey(id, {
+      ...input,
+      assignedUserId: input.assignedUserId === '' ? null : input.assignedUserId
+    })
+    if (!updated) return err('License not found', 404)
+    return ok(updated)
+  }
+  if (method === 'DELETE' && path.match(/^\/api\/admin\/license-keys\/[^/]+$/)) {
+    const id = path.split('/').pop()!
+    if (!(await deleteLicenseKey(id))) return err('License not found', 404)
     return ok({ removed: true })
   }
 

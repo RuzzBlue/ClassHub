@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppLayout } from '../components/AppLayout'
+import { EditableDataTable } from '../components/admin/EditableDataTable'
 import { apiFetch } from '../lib/api-client'
+import { downloadLicenseCertificate } from '../lib/license-export'
 import { useAppStore } from '../stores/app-store'
 import type {
   CourseEnrollment,
   Group,
+  LicenseKey,
   LicenseType,
   User,
   UserRole,
@@ -21,6 +24,7 @@ type AdminSection =
   | 'relationships'
 
 const STATUSES: UserStatus[] = ['paid', 'active', 'unpaid', 'deactivated']
+const LICENSE_STATUSES = ['active', 'inactive'] as const
 
 export function AdminPage(): React.JSX.Element {
   const { t } = useTranslation()
@@ -28,13 +32,18 @@ export function AdminPage(): React.JSX.Element {
   const [section, setSection] = useState<AdminSection>('general')
   const [groups, setGroups] = useState<Group[]>([])
   const [licenseTypes, setLicenseTypes] = useState<LicenseType[]>([])
+  const [licenseKeys, setLicenseKeys] = useState<LicenseKey[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
   const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([])
   const [instructors, setInstructors] = useState<User[]>([])
   const [learners, setLearners] = useState<User[]>([])
   const [groupFilter, setGroupFilter] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [genLicenseTypeId, setGenLicenseTypeId] = useState('')
+  const [genExpiresAt, setGenExpiresAt] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   const loadGroups = useCallback(async () => {
     const res = await apiFetch<Group[]>({ method: 'GET', path: '/api/admin/groups' })
@@ -44,6 +53,11 @@ export function AdminPage(): React.JSX.Element {
   const loadLicenseTypes = useCallback(async () => {
     const res = await apiFetch<LicenseType[]>({ method: 'GET', path: '/api/admin/license-types' })
     if (res.ok && res.data) setLicenseTypes(res.data)
+  }, [])
+
+  const loadLicenseKeys = useCallback(async () => {
+    const res = await apiFetch<LicenseKey[]>({ method: 'GET', path: '/api/admin/license-keys' })
+    if (res.ok && res.data) setLicenseKeys(res.data)
   }, [])
 
   const loadUsers = useCallback(
@@ -56,6 +70,18 @@ export function AdminPage(): React.JSX.Element {
     [groupFilter]
   )
 
+  const loadAllUsers = useCallback(async () => {
+    const roles: UserRole[] = ['admin', 'instructor', 'learner']
+    const lists = await Promise.all(
+      roles.map((role) => apiFetch<User[]>({ method: 'GET', path: '/api/admin/users', params: { role } }))
+    )
+    const merged: User[] = []
+    for (const res of lists) {
+      if (res.ok && res.data) merged.push(...res.data)
+    }
+    setAllUsers(merged)
+  }, [])
+
   const loadEnrollments = useCallback(async () => {
     const res = await apiFetch<CourseEnrollment[]>({ method: 'GET', path: '/api/admin/enrollments' })
     if (res.ok && res.data) setEnrollments(res.data)
@@ -65,7 +91,13 @@ export function AdminPage(): React.JSX.Element {
     if (user?.role !== 'admin') return
     void loadGroups()
     void loadLicenseTypes()
-  }, [user, loadGroups, loadLicenseTypes])
+    void loadLicenseKeys()
+    void loadAllUsers()
+  }, [user, loadGroups, loadLicenseTypes, loadLicenseKeys, loadAllUsers])
+
+  useEffect(() => {
+    if (licenseTypes.length && !genLicenseTypeId) setGenLicenseTypeId(licenseTypes[0].id)
+  }, [licenseTypes, genLicenseTypeId])
 
   useEffect(() => {
     if (user?.role !== 'admin') return
@@ -93,6 +125,24 @@ export function AdminPage(): React.JSX.Element {
     return null
   }
 
+  const groupOptions = [
+    { value: '', label: t('admin.noGroup') },
+    ...groups.map((g) => ({ value: g.id, label: g.name }))
+  ]
+
+  const licenseTypeOptions = [
+    { value: '', label: t('admin.noLicenseType') },
+    ...licenseTypes.map((lt) => ({ value: lt.id, label: lt.name }))
+  ]
+
+  const statusOptions = STATUSES.map((s) => ({ value: s, label: s }))
+  const licenseStatusOptions = LICENSE_STATUSES.map((s) => ({ value: s, label: s }))
+
+  const userAssignOptions = [
+    { value: '', label: t('admin.unassigned') },
+    ...allUsers.map((u) => ({ value: u.id, label: `${u.displayName} (${u.role})` }))
+  ]
+
   const handleCreateUser = async (form: FormData): Promise<void> => {
     const role = roleForSection()
     if (!role) return
@@ -115,14 +165,27 @@ export function AdminPage(): React.JSX.Element {
     if (res.ok) {
       setMessage(t('admin.saved'))
       await loadUsers(role)
+      await loadAllUsers()
     } else setMessage(res.error || t('admin.error'))
   }
 
-  const handleDeleteUser = async (id: string): Promise<void> => {
-    const role = roleForSection()
-    if (!role || !confirm(t('admin.confirmDelete'))) return
-    await apiFetch({ method: 'DELETE', path: `/api/admin/users/${id}` })
-    await loadUsers(role)
+  const handleGenerateLicense = async (): Promise<void> => {
+    if (!genLicenseTypeId) return
+    setGenerating(true)
+    const res = await apiFetch<LicenseKey>({
+      method: 'POST',
+      path: '/api/admin/license-keys',
+      body: {
+        licenseTypeId: genLicenseTypeId,
+        expiresAt: genExpiresAt || null
+      }
+    })
+    setGenerating(false)
+    if (res.ok) {
+      setMessage(t('admin.licenseGenerated'))
+      await loadLicenseKeys()
+      if (res.data) downloadLicenseCertificate(res.data)
+    } else setMessage(res.error || t('admin.error'))
   }
 
   const sidebarItems: { id: AdminSection; label: string; icon: string }[] = [
@@ -144,7 +207,7 @@ export function AdminPage(): React.JSX.Element {
             <button
               key={item.id}
               type="button"
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 mb-1 ${
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 mb-1 cursor-pointer ${
                 section === item.id ? 'bg-[var(--color-surface2)]' : 'hover:bg-[var(--color-surface2)]'
               }`}
               onClick={() => setSection(item.id)}
@@ -156,41 +219,209 @@ export function AdminPage(): React.JSX.Element {
         </aside>
 
         <main className="flex-1 overflow-auto p-6">
-          <h1 className="text-xl font-bold mb-4">
-            {sidebarItems.find((s) => s.id === section)?.label}
-          </h1>
+          <h1 className="text-xl font-bold mb-4">{sidebarItems.find((s) => s.id === section)?.label}</h1>
           {message && <p className="text-sm mb-4 text-[var(--color-success)]">{message}</p>}
 
           {section === 'general' && (
-            <div className="grid gap-8 lg:grid-cols-2">
-              <SimpleCrudTable
-                title={t('admin.groups')}
-                rows={groups.map((g) => ({ id: g.id, name: g.name, extra: g.description || '—' }))}
-                onAdd={async (name, desc) => {
-                  await apiFetch({ method: 'POST', path: '/api/admin/groups', body: { name, description: desc } })
-                  await loadGroups()
-                }}
-                onDelete={async (id) => {
-                  await apiFetch({ method: 'DELETE', path: `/api/admin/groups/${id}` })
-                  await loadGroups()
-                }}
-              />
-              <SimpleCrudTable
-                title={t('admin.licenseTypes')}
-                rows={licenseTypes.map((l) => ({ id: l.id, name: l.name, extra: l.description || '—' }))}
-                onAdd={async (name, desc) => {
-                  await apiFetch({
-                    method: 'POST',
-                    path: '/api/admin/license-types',
-                    body: { name, description: desc }
-                  })
-                  await loadLicenseTypes()
-                }}
-                onDelete={async (id) => {
-                  await apiFetch({ method: 'DELETE', path: `/api/admin/license-types/${id}` })
-                  await loadLicenseTypes()
-                }}
-              />
+            <div className="space-y-8">
+              <div className="grid gap-8 lg:grid-cols-2">
+                <NamedEntityPanel
+                  title={t('admin.groups')}
+                  onAdd={async (name, description) => {
+                    await apiFetch({ method: 'POST', path: '/api/admin/groups', body: { name, description } })
+                    await loadGroups()
+                  }}
+                >
+                  <EditableDataTable
+                    rows={groups}
+                    columns={[
+                      { key: 'name', label: t('admin.name'), editable: true, getValue: (r) => r.name },
+                      {
+                        key: 'description',
+                        label: t('admin.description'),
+                        editable: true,
+                        getValue: (r) => r.description || ''
+                      }
+                    ]}
+                    onSave={async (row, updates) => {
+                      await apiFetch({
+                        method: 'PUT',
+                        path: `/api/admin/groups/${row.id}`,
+                        body: { name: updates.name, description: updates.description }
+                      })
+                      await loadGroups()
+                    }}
+                    onDelete={async (id) => {
+                      await apiFetch({ method: 'DELETE', path: `/api/admin/groups/${id}` })
+                      await loadGroups()
+                    }}
+                  />
+                </NamedEntityPanel>
+
+                <NamedEntityPanel
+                  title={t('admin.licenseTypes')}
+                  onAdd={async (name, description) => {
+                    await apiFetch({
+                      method: 'POST',
+                      path: '/api/admin/license-types',
+                      body: { name, description }
+                    })
+                    await loadLicenseTypes()
+                  }}
+                >
+                  <EditableDataTable
+                    rows={licenseTypes}
+                    columns={[
+                      { key: 'name', label: t('admin.name'), editable: true, getValue: (r) => r.name },
+                      {
+                        key: 'description',
+                        label: t('admin.description'),
+                        editable: true,
+                        getValue: (r) => r.description || ''
+                      }
+                    ]}
+                    onSave={async (row, updates) => {
+                      await apiFetch({
+                        method: 'PUT',
+                        path: `/api/admin/license-types/${row.id}`,
+                        body: { name: updates.name, description: updates.description }
+                      })
+                      await loadLicenseTypes()
+                    }}
+                    onDelete={async (id) => {
+                      await apiFetch({ method: 'DELETE', path: `/api/admin/license-types/${id}` })
+                      await loadLicenseTypes()
+                    }}
+                  />
+                </NamedEntityPanel>
+              </div>
+
+              <div className="card p-4 space-y-4">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <h2 className="font-semibold text-lg">{t('admin.licenses')}</h2>
+                    <p className="text-sm text-[var(--color-text-muted)]">{t('admin.licensesHint')}</p>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div>
+                      <label className="text-xs text-[var(--color-text-muted)]">{t('admin.licenseTypes')}</label>
+                      <select
+                        className="input py-1.5 text-sm min-w-[160px]"
+                        value={genLicenseTypeId}
+                        onChange={(e) => setGenLicenseTypeId(e.target.value)}
+                      >
+                        {licenseTypes.map((lt) => (
+                          <option key={lt.id} value={lt.id}>
+                            {lt.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--color-text-muted)]">{t('admin.expiresAt')}</label>
+                      <input
+                        type="date"
+                        className="input py-1.5 text-sm"
+                        value={genExpiresAt}
+                        onChange={(e) => setGenExpiresAt(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-primary cursor-pointer"
+                      disabled={generating || !genLicenseTypeId}
+                      onClick={() => void handleGenerateLicense()}
+                    >
+                      {generating ? (
+                        <i className="fas fa-spinner fa-spin" />
+                      ) : (
+                        <i className="fas fa-key" />
+                      )}
+                      {t('admin.generateLicense')}
+                    </button>
+                  </div>
+                </div>
+
+                <EditableDataTable
+                  rows={licenseKeys}
+                  columns={[
+                    {
+                      key: 'code',
+                      label: t('admin.licenseCode'),
+                      editable: false,
+                      getValue: (r) => r.code,
+                      render: (r) => <span className="font-mono text-xs">{r.code}</span>
+                    },
+                    {
+                      key: 'licenseTypeId',
+                      label: t('admin.licenseTypes'),
+                      editable: true,
+                      type: 'select',
+                      options: licenseTypes.map((lt) => ({ value: lt.id, label: lt.name })),
+                      getValue: (r) => r.licenseTypeName
+                    },
+                    {
+                      key: 'status',
+                      label: t('admin.status'),
+                      editable: true,
+                      type: 'select',
+                      options: licenseStatusOptions,
+                      getValue: (r) => r.status
+                    },
+                    {
+                      key: 'expiresAt',
+                      label: t('admin.expiresAt'),
+                      editable: true,
+                      type: 'date',
+                      getValue: (r) =>
+                        r.expiresAt
+                          ? new Date(r.expiresAt).toLocaleDateString()
+                          : t('admin.noExpiration')
+                    },
+                    {
+                      key: 'assignedUserId',
+                      label: t('admin.assignedTo'),
+                      editable: true,
+                      type: 'select',
+                      options: userAssignOptions,
+                      getValue: (r) => r.assignedUserName || t('admin.unassigned')
+                    }
+                  ]}
+                  getEditValues={(row) => ({
+                    licenseTypeId: row.licenseTypeId,
+                    status: row.status,
+                    expiresAt: row.expiresAt ? row.expiresAt.slice(0, 10) : '',
+                    assignedUserId: row.assignedUserId || ''
+                  })}
+                  onSave={async (row, updates) => {
+                    await apiFetch({
+                      method: 'PUT',
+                      path: `/api/admin/license-keys/${row.id}`,
+                      body: {
+                        licenseTypeId: updates.licenseTypeId,
+                        status: updates.status,
+                        expiresAt: updates.expiresAt || null,
+                        assignedUserId: updates.assignedUserId || null
+                      }
+                    })
+                    await loadLicenseKeys()
+                  }}
+                  onDelete={async (id) => {
+                    await apiFetch({ method: 'DELETE', path: `/api/admin/license-keys/${id}` })
+                    await loadLicenseKeys()
+                  }}
+                  extraActions={(row) => (
+                    <button
+                      type="button"
+                      className="btn btn-ghost text-xs px-2 cursor-pointer"
+                      title={t('admin.exportLicense')}
+                      onClick={() => downloadLicenseCertificate(row)}
+                    >
+                      <i className="fas fa-file-export" />
+                    </button>
+                  )}
+                />
+              </div>
             </div>
           )}
 
@@ -249,39 +480,70 @@ export function AdminPage(): React.JSX.Element {
                     </option>
                   ))}
                 </select>
-                <button type="submit" className="btn btn-primary sm:col-span-2 lg:col-span-3" disabled={loading}>
+                <button type="submit" className="btn btn-primary sm:col-span-2 lg:col-span-3 cursor-pointer" disabled={loading}>
                   <i className="fas fa-plus" /> {t('admin.addUser')}
                 </button>
               </form>
 
-              <div className="card overflow-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border)] text-left">
-                      <th className="p-3">{t('settings.displayName')}</th>
-                      <th className="p-3">{t('auth.email')}</th>
-                      <th className="p-3">{t('admin.group')}</th>
-                      <th className="p-3">{t('admin.status')}</th>
-                      <th className="p-3" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} className="border-b border-[var(--color-border)]">
-                        <td className="p-3">{u.displayName}</td>
-                        <td className="p-3">{u.email}</td>
-                        <td className="p-3">{u.groupName || '—'}</td>
-                        <td className="p-3">{u.status}</td>
-                        <td className="p-3 text-right">
-                          <button type="button" className="btn btn-ghost text-xs text-[var(--color-danger)]" onClick={() => void handleDeleteUser(u.id)}>
-                            <i className="fas fa-trash" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <EditableDataTable
+                rows={users}
+                columns={[
+                  { key: 'displayName', label: t('settings.displayName'), editable: true, getValue: (r) => r.displayName },
+                  { key: 'email', label: t('auth.email'), editable: true, getValue: (r) => r.email },
+                  {
+                    key: 'groupId',
+                    label: t('admin.group'),
+                    editable: true,
+                    type: 'select',
+                    options: groupOptions,
+                    getValue: (r) => r.groupName || t('admin.noGroup')
+                  },
+                  {
+                    key: 'licenseTypeId',
+                    label: t('admin.licenseTypes'),
+                    editable: true,
+                    type: 'select',
+                    options: licenseTypeOptions,
+                    getValue: (r) => r.licenseTypeName || t('admin.noLicenseType')
+                  },
+                  {
+                    key: 'status',
+                    label: t('admin.status'),
+                    editable: true,
+                    type: 'select',
+                    options: statusOptions,
+                    getValue: (r) => r.status
+                  }
+                ]}
+                getEditValues={(row) => ({
+                  groupId: row.groupId || '',
+                  licenseTypeId: row.licenseTypeId || ''
+                })}
+                onSave={async (row, updates) => {
+                  const role = roleForSection()
+                  if (!role) return
+                  await apiFetch({
+                    method: 'PUT',
+                    path: `/api/admin/users/${row.id}`,
+                    body: {
+                      displayName: updates.displayName,
+                      email: updates.email,
+                      groupId: updates.groupId || null,
+                      licenseTypeId: updates.licenseTypeId || null,
+                      status: updates.status as UserStatus
+                    }
+                  })
+                  await loadUsers(role)
+                  await loadAllUsers()
+                }}
+                onDelete={async (id) => {
+                  const role = roleForSection()
+                  if (!role) return
+                  await apiFetch({ method: 'DELETE', path: `/api/admin/users/${id}` })
+                  await loadUsers(role)
+                  await loadAllUsers()
+                }}
+              />
             </>
           )}
 
@@ -299,26 +561,24 @@ export function AdminPage(): React.JSX.Element {
   )
 }
 
-function SimpleCrudTable({
+function NamedEntityPanel({
   title,
-  rows,
   onAdd,
-  onDelete
+  children
 }: {
   title: string
-  rows: { id: string; name: string; extra: string }[]
   onAdd: (name: string, description: string) => Promise<void>
-  onDelete: (id: string) => Promise<void>
+  children: React.ReactNode
 }): React.JSX.Element {
   const { t } = useTranslation()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
 
   return (
-    <div className="card p-4">
-      <h2 className="font-semibold mb-3">{title}</h2>
+    <div className="card p-4 space-y-3">
+      <h2 className="font-semibold">{title}</h2>
       <form
-        className="flex flex-wrap gap-2 mb-4"
+        className="flex flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault()
           void onAdd(name, description).then(() => {
@@ -327,25 +587,24 @@ function SimpleCrudTable({
           })
         }}
       >
-        <input className="input flex-1 min-w-[120px]" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('admin.name')} required />
-        <input className="input flex-1 min-w-[120px]" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('admin.description')} />
-        <button type="submit" className="btn btn-primary">
+        <input
+          className="input flex-1 min-w-[120px]"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('admin.name')}
+          required
+        />
+        <input
+          className="input flex-1 min-w-[120px]"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t('admin.description')}
+        />
+        <button type="submit" className="btn btn-primary cursor-pointer">
           <i className="fas fa-plus" />
         </button>
       </form>
-      <ul className="space-y-2">
-        {rows.map((row) => (
-          <li key={row.id} className="flex items-center justify-between py-2 border-b border-[var(--color-border)]">
-            <div>
-              <span className="font-medium">{row.name}</span>
-              <span className="text-xs text-[var(--color-text-muted)] ml-2">{row.extra}</span>
-            </div>
-            <button type="button" className="btn btn-ghost text-xs" onClick={() => void onDelete(row.id)}>
-              <i className="fas fa-trash text-[var(--color-danger)]" />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {children}
     </div>
   )
 }
@@ -366,6 +625,9 @@ function EnrollmentPanel({
   const [instructorId, setInstructorId] = useState('')
   const [learnerId, setLearnerId] = useState('')
 
+  const instructorOptions = instructors.map((i) => ({ value: i.id, label: i.displayName }))
+  const learnerOptions = learners.map((l) => ({ value: l.id, label: l.displayName }))
+
   return (
     <>
       <form
@@ -382,7 +644,13 @@ function EnrollmentPanel({
           await onRefresh()
         }}
       >
-        <input className="input" value={courseId} onChange={(e) => setCourseId(e.target.value)} placeholder={t('admin.courseId')} required />
+        <input
+          className="input"
+          value={courseId}
+          onChange={(e) => setCourseId(e.target.value)}
+          placeholder={t('admin.courseId')}
+          required
+        />
         <select className="input" value={instructorId} onChange={(e) => setInstructorId(e.target.value)} required>
           <option value="">{t('admin.selectInstructor')}</option>
           {instructors.map((i) => (
@@ -399,43 +667,53 @@ function EnrollmentPanel({
             </option>
           ))}
         </select>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary cursor-pointer">
           <i className="fas fa-link" /> {t('admin.enroll')}
         </button>
       </form>
-      <div className="card overflow-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--color-border)] text-left">
-              <th className="p-3">{t('admin.courseId')}</th>
-              <th className="p-3">{t('admin.instructor')}</th>
-              <th className="p-3">{t('admin.learner')}</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {enrollments.map((e) => (
-              <tr key={e.id} className="border-b border-[var(--color-border)]">
-                <td className="p-3 font-mono">{e.courseId}</td>
-                <td className="p-3">{e.instructorName}</td>
-                <td className="p-3">{e.learnerName}</td>
-                <td className="p-3 text-right">
-                  <button
-                    type="button"
-                    className="btn btn-ghost text-xs"
-                    onClick={async () => {
-                      await apiFetch({ method: 'DELETE', path: `/api/admin/enrollments/${e.id}` })
-                      await onRefresh()
-                    }}
-                  >
-                    <i className="fas fa-trash text-[var(--color-danger)]" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      <EditableDataTable
+        rows={enrollments}
+        columns={[
+          { key: 'courseId', label: t('admin.courseId'), editable: true, getValue: (r) => r.courseId },
+          {
+            key: 'instructorId',
+            label: t('admin.instructor'),
+            editable: true,
+            type: 'select',
+            options: instructorOptions,
+            getValue: (r) => r.instructorName
+          },
+          {
+            key: 'learnerId',
+            label: t('admin.learner'),
+            editable: true,
+            type: 'select',
+            options: learnerOptions,
+            getValue: (r) => r.learnerName
+          }
+        ]}
+        getEditValues={(row) => ({
+          instructorId: row.instructorId,
+          learnerId: row.learnerId
+        })}
+        onSave={async (row, updates) => {
+          await apiFetch({
+            method: 'PUT',
+            path: `/api/admin/enrollments/${row.id}`,
+            body: {
+              courseId: updates.courseId,
+              instructorId: updates.instructorId,
+              learnerId: updates.learnerId
+            }
+          })
+          await onRefresh()
+        }}
+        onDelete={async (id) => {
+          await apiFetch({ method: 'DELETE', path: `/api/admin/enrollments/${id}` })
+          await onRefresh()
+        }}
+      />
     </>
   )
 }

@@ -68,6 +68,20 @@ export interface CourseEnrollment {
   createdAt: string
 }
 
+export type LicenseKeyStatus = 'active' | 'inactive'
+
+export interface LicenseKey {
+  id: string
+  code: string
+  licenseTypeId: string
+  licenseTypeName: string
+  status: LicenseKeyStatus
+  expiresAt: string | null
+  assignedUserId: string | null
+  assignedUserName: string | null
+  createdAt: string
+}
+
 export interface LessonProgress {
   userId: string
   courseId: string

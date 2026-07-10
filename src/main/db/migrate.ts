@@ -45,6 +45,20 @@ CREATE TABLE IF NOT EXISTS course_enrollments (
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_group ON users(group_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_course ON course_enrollments(course_id);
+
+CREATE TABLE IF NOT EXISTS license_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL UNIQUE,
+  code_hash TEXT NOT NULL,
+  license_type_id UUID NOT NULL REFERENCES license_types(id) ON DELETE RESTRICT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  expires_at TIMESTAMPTZ,
+  assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_license_keys_status ON license_keys(status);
+CREATE INDEX IF NOT EXISTS idx_license_keys_type ON license_keys(license_type_id);
 `
 
 let migrated = false

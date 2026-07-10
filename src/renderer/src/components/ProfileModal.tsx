@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
+import { PasswordField } from './PasswordField'
 import type { User } from '@shared/types'
 import { cn } from '../lib/utils'
 
@@ -80,6 +81,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
     await apiFetch({ method: 'POST', path: '/api/auth/logout' })
     await logout()
     onClose()
+    navigate('/')
   }
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
@@ -104,7 +106,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
               <p className="text-xs text-[var(--color-text-muted)]">{user.email || '—'}</p>
             </div>
           </div>
-          <button className="btn btn-ghost p-2" onClick={onClose}>
+          <button type="button" className="btn btn-ghost p-2 cursor-pointer" onClick={onClose}>
             <i className="fas fa-times" />
           </button>
         </div>
@@ -115,7 +117,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
               key={titem.id}
               type="button"
               className={cn(
-                'flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1',
+                'flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1 cursor-pointer',
                 tab === titem.id && 'border-b-2'
               )}
               style={tab === titem.id ? { borderColor: 'var(--accent)' } : {}}
@@ -140,26 +142,19 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
               </div>
               <div>
                 <label className="text-sm text-[var(--color-text-muted)]">{t('auth.newPassword')}</label>
-                <input
-                  className="input mt-1"
-                  type="password"
+                <PasswordField
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   placeholder={t('auth.leaveBlank')}
                 />
               </div>
               {password && (
                 <div>
                   <label className="text-sm text-[var(--color-text-muted)]">{t('auth.confirmPassword')}</label>
-                  <input
-                    className="input mt-1"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
+                  <PasswordField value={confirmPassword} onChange={setConfirmPassword} />
                 </div>
               )}
-              <button className="btn btn-primary w-full justify-center" onClick={handleSaveProfile}>
+              <button type="button" className="btn btn-primary w-full justify-center cursor-pointer" onClick={handleSaveProfile}>
                 {t('settings.save')}
               </button>
             </>
@@ -167,36 +162,50 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
 
           {tab === 'app' && (
             <>
-              <div>
-                <label className="text-sm text-[var(--color-text-muted)]">{t('settings.language')}</label>
-                <select className="input mt-1" value={locale} onChange={(e) => setLocale(e.target.value as 'en' | 'es')}>
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-[var(--color-text-muted)]">{t('settings.accentColor')}</label>
-                <input type="color" className="w-full h-10 mt-1 rounded cursor-pointer" value={accent} onChange={(e) => setAccent(e.target.value)} />
+              <div className="flex items-end gap-4">
+                <div className="flex-1 min-w-0">
+                  <label className="text-sm text-[var(--color-text-muted)]">{t('settings.language')}</label>
+                  <select
+                    className="input mt-1 w-full"
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value as 'en' | 'es')}
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </div>
+                <div className="shrink-0">
+                  <label className="text-sm text-[var(--color-text-muted)] block mb-1">{t('settings.accentColor')}</label>
+                  <input
+                    type="color"
+                    className="color-picker-circle"
+                    value={accent}
+                    onChange={(e) => setAccent(e.target.value)}
+                    title={t('settings.accentColor')}
+                  />
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
-                  className={`btn flex-1 justify-center ${mode === 'dark' ? 'btn-primary' : 'btn-ghost'}`}
+                  type="button"
+                  className={`btn flex-1 justify-center cursor-pointer ${mode === 'dark' ? 'btn-primary' : 'btn-ghost'}`}
                   onClick={() => setMode('dark')}
                 >
                   {t('settings.darkMode')}
                 </button>
                 <button
-                  className={`btn flex-1 justify-center ${mode === 'light' ? 'btn-primary' : 'btn-ghost'}`}
+                  type="button"
+                  className={`btn flex-1 justify-center cursor-pointer ${mode === 'light' ? 'btn-primary' : 'btn-ghost'}`}
                   onClick={() => setMode('light')}
                 >
                   {t('settings.lightMode')}
                 </button>
               </div>
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={sounds} onChange={(e) => setSounds(e.target.checked)} />
                 {t('settings.sounds')}
               </label>
-              <button className="btn btn-primary w-full justify-center" onClick={handleSaveApp}>
+              <button type="button" className="btn btn-primary w-full justify-center cursor-pointer" onClick={handleSaveApp}>
                 {t('settings.save')}
               </button>
             </>
@@ -219,7 +228,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
               {(user.role === 'instructor' || user.role === 'admin') && (
                 <button
                   type="button"
-                  className="btn btn-primary w-full justify-center"
+                  className="btn btn-primary w-full justify-center cursor-pointer"
                   onClick={() => {
                     onClose()
                     navigate('/instructor')
@@ -231,7 +240,7 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
               {(user.role === 'learner' || user.role === 'admin') && (
                 <button
                   type="button"
-                  className="btn btn-ghost w-full justify-center border border-[var(--color-border)]"
+                  className="btn btn-ghost w-full justify-center border border-[var(--color-border)] cursor-pointer"
                   onClick={() => {
                     onClose()
                     navigate('/learner-hub')
@@ -247,7 +256,11 @@ export function ProfileModal({ open, onClose }: Props): React.JSX.Element | null
         </div>
 
         <div className="px-6 py-3 border-t border-[var(--color-border)]">
-          <button className="btn btn-ghost w-full justify-center text-[var(--color-danger)]" onClick={handleLogout}>
+          <button
+            type="button"
+            className="btn btn-ghost w-full justify-center text-[var(--color-danger)] cursor-pointer"
+            onClick={handleLogout}
+          >
             <i className="fas fa-sign-out-alt" /> {t('auth.signOut')}
           </button>
         </div>

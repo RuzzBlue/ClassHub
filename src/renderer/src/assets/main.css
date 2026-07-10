@@ -106,3 +106,27 @@ body {
 .slide-enter {
   animation: slideIn 0.35s ease;
 }
+
+.color-picker-circle {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  background: transparent;
+}
+.color-picker-circle::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.color-picker-circle::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.color-picker-circle::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
