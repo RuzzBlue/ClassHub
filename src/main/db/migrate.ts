@@ -79,8 +79,9 @@ export async function initDatabase(): Promise<void> {
 }
 
 async function migrateLearnerRoleToStudent(): Promise<void> {
-  await query(`UPDATE users SET role = 'student' WHERE role = 'learner'`)
+  // Drop old constraint first — it may still only allow 'learner', not 'student'.
   await query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`)
+  await query(`UPDATE users SET role = 'student' WHERE role = 'learner'`)
   await query(
     `ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'instructor', 'student'))`
   )
