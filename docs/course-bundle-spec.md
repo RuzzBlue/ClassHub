@@ -15,15 +15,17 @@ MyCourse/
           lesson.html  # Single renderable lesson with sections
           quiz.json    # Optional structured quiz
           assets/      # Lesson-specific assets
+    notes/             # Optional presenter notes: {lessonId}.md
   extras/              # Optional author-shipped extras (glossary, downloads, links)
-  instructor/          # Optional instructor notes/resources (notesRoot)
   lab/                 # Optional — declare in course.json to show Lab in Menu
 ```
 
 ## course.json
 
-The manifest defines metadata, navigation, access rules, extras, and optional lab/instructor notes.
+The manifest defines metadata, navigation, access rules, extras, and optional lab.
 Role menus (instructor/student panels, grades, tickets, etc.) are provided by the ClassHub app — not by course packs.
+
+Presenter notes live under `content/notes/{lessonId}.md` by default (optional `notesRoot` override).
 
 Inspect any installed course's `course.json` after import for a complete example.
 

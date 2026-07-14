@@ -53,4 +53,4 @@ Base URL: `/api`
 
 ## Notes
 
-- `GET /api/notes/:courseId?lessonId=` — Instructor notes
+- `GET /api/notes/:courseId?lessonId=` — Presenter notes (`content/notes/{lessonId}.md` by default)

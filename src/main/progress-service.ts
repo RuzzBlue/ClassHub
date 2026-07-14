@@ -182,15 +182,26 @@ export function activateLicense(userId: string, courseId: string, key: string): 
 
 export function getInstructorNotes(courseId: string, lessonId: string): string {
   const manifest = getManifest(courseId)
-  if (!manifest?.instructor?.notesRoot) return ''
-  const notesPath = join(manifest.instructor.notesRoot, `${lessonId}.md`)
-  const fullPath = resolveAssetPath(courseId, notesPath)
-  if (!fullPath) return ''
-  try {
-    return readFileSync(fullPath, 'utf-8')
-  } catch {
-    return ''
+  if (!lessonId) return ''
+
+  const roots = [
+    manifest?.notesRoot,
+    'content/notes',
+    // Legacy packs that still ship notes under instructor/
+    'instructor/notes'
+  ].filter((root, index, all): root is string => Boolean(root) && all.indexOf(root) === index)
+
+  for (const root of roots) {
+    const notesPath = join(root, `${lessonId}.md`)
+    const fullPath = resolveAssetPath(courseId, notesPath)
+    if (!fullPath) continue
+    try {
+      return readFileSync(fullPath, 'utf-8')
+    } catch {
+      // try next root
+    }
   }
+  return ''
 }
 
 export function getLessonInfo(manifest: CourseManifest, lessonId: string) {

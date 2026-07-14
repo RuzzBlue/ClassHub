@@ -55,10 +55,6 @@ export const ExtraSchema = z.object({
   order: z.number()
 })
 
-export const InstructorConfigSchema = z.object({
-  notesRoot: z.string().optional()
-})
-
 export const LabItemSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -97,7 +93,8 @@ export const CourseManifestSchema = z.object({
   access: AccessConfigSchema.default({}),
   navigation: NavigationSchema,
   extras: z.array(ExtraSchema).default([]),
-  instructor: InstructorConfigSchema.optional(),
+  /** Presenter notes folder; defaults to content/notes/{lessonId}.md */
+  notesRoot: z.string().default('content/notes'),
   lab: LabConfigSchema.optional(),
   demoLicenseKey: z.string().optional()
 })
