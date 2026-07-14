@@ -59,12 +59,25 @@ export const InstructorConfigSchema = z.object({
   notesRoot: z.string().optional()
 })
 
+export const LabItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  order: z.number(),
+  /** Curriculum lesson after which this lab is intended. */
+  dueAfterLessonId: z.string(),
+  /** HTML instructions for this lab. */
+  entry: z.string(),
+  /** Short list blurb. */
+  summary: z.string().optional(),
+  /** What success looks like (shown in the app Lab panel). */
+  expectedResult: z.string().optional()
+})
+
 /** Optional hands-on practice area outside Overview slides/quizzes. */
 export const LabConfigSchema = z.object({
   title: z.string().optional(),
   icon: z.string().default('fa-flask'),
-  /** Reserved for future lab content; Menus use an app panel for now. */
-  entry: z.string().optional()
+  labs: z.array(LabItemSchema).default([])
 })
 
 export const CourseManifestSchema = z.object({
@@ -94,6 +107,7 @@ export type Module = z.infer<typeof ModuleSchema>
 export type Unit = z.infer<typeof UnitSchema>
 export type Lesson = z.infer<typeof LessonSchema>
 export type Extra = z.infer<typeof ExtraSchema>
+export type LabItem = z.infer<typeof LabItemSchema>
 export type LabConfig = z.infer<typeof LabConfigSchema>
 export type AccessPolicy = z.infer<typeof AccessPolicySchema>
 

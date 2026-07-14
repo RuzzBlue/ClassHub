@@ -475,3 +475,54 @@ body {
 .course-html-frame {
   background: transparent;
 }
+
+.lab-list-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.lab-list-item:hover {
+  background: var(--color-surface2);
+}
+.lab-list-item-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.lab-status-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+.lab-status-new {
+  background: var(--color-surface2);
+  color: var(--color-text-muted);
+}
+.lab-status-progress {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+.lab-status-submitted {
+  background: color-mix(in srgb, var(--color-warning, #d97706) 22%, transparent);
+  color: var(--color-warning, #d97706);
+}
+.lab-status-done {
+  background: color-mix(in srgb, var(--color-success, #16a34a) 20%, transparent);
+  color: var(--color-success, #16a34a);
+}
+.lab-expected {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--color-surface2);
+  border-left: 3px solid var(--accent);
+}

@@ -1,9 +1,10 @@
 import { join } from 'path'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs'
 import { createHash } from 'crypto'
 import type {
   AppSettings,
   CourseProgress,
+  LabSubmission,
   LessonProgress,
   License,
   QuizResult
@@ -16,13 +17,15 @@ interface ProgressData {
   lessonProgress: LessonProgress[]
   quizResults: QuizResult[]
   licenses: License[]
+  labSubmissions: LabSubmission[]
 }
 
 const EMPTY_PROGRESS: ProgressData = {
   courseProgress: [],
   lessonProgress: [],
   quizResults: [],
-  licenses: []
+  licenses: [],
+  labSubmissions: []
 }
 
 export function hashPassword(password: string): string {
@@ -67,7 +70,12 @@ export class DataStore {
       return
     }
     try {
-      this.progress = { ...EMPTY_PROGRESS, ...JSON.parse(readFileSync(this.progressPath, 'utf-8')) }
+      const parsed = JSON.parse(readFileSync(this.progressPath, 'utf-8')) as Partial<ProgressData>
+      this.progress = {
+        ...EMPTY_PROGRESS,
+        ...parsed,
+        labSubmissions: parsed.labSubmissions ?? []
+      }
     } catch {
       this.progress = { ...EMPTY_PROGRESS }
     }
@@ -171,6 +179,54 @@ export class DataStore {
     if (idx >= 0) this.progress.licenses[idx] = license
     else this.progress.licenses.push(license)
     this.saveProgress()
+  }
+
+  getLabSubmission(userId: string, courseId: string, labId: string): LabSubmission | null {
+    return (
+      this.progress.labSubmissions.find(
+        (s) => s.userId === userId && s.courseId === courseId && s.labId === labId
+      ) ?? null
+    )
+  }
+
+  getLabSubmissions(userId: string, courseId: string): LabSubmission[] {
+    return this.progress.labSubmissions.filter((s) => s.userId === userId && s.courseId === courseId)
+  }
+
+  upsertLabSubmission(submission: LabSubmission): void {
+    const idx = this.progress.labSubmissions.findIndex(
+      (s) =>
+        s.userId === submission.userId &&
+        s.courseId === submission.courseId &&
+        s.labId === submission.labId
+    )
+    if (idx >= 0) this.progress.labSubmissions[idx] = submission
+    else this.progress.labSubmissions.push(submission)
+    this.saveProgress()
+  }
+
+  getLabAttachmentsDir(userId: string, courseId: string, labId: string): string {
+    const dir = join(this.dataRoot, 'lab-submissions', userId, courseId, labId)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    return dir
+  }
+
+  saveLabAttachmentFile(
+    userId: string,
+    courseId: string,
+    labId: string,
+    safeName: string,
+    buffer: Buffer
+  ): string {
+    const dir = this.getLabAttachmentsDir(userId, courseId, labId)
+    const fullPath = join(dir, safeName)
+    writeFileSync(fullPath, buffer)
+    return fullPath
+  }
+
+  deleteLabAttachmentFile(userId: string, courseId: string, labId: string, safeName: string): void {
+    const fullPath = join(this.getLabAttachmentsDir(userId, courseId, labId), safeName)
+    if (existsSync(fullPath)) unlinkSync(fullPath)
   }
 
   getDataRoot(): string {

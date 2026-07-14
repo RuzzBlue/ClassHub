@@ -29,7 +29,11 @@ function collectReferencedFiles(manifest: CourseManifest): string[] {
   for (const extra of manifest.extras) {
     files.push(extra.entry)
   }
-  if (manifest.lab?.entry) files.push(manifest.lab.entry)
+  if (manifest.lab?.labs?.length) {
+    for (const lab of manifest.lab.labs) {
+      files.push(lab.entry)
+    }
+  }
   return files
 }
 

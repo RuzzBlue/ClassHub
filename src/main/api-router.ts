@@ -28,7 +28,17 @@ import {
   activateLicense,
   getInstructorNotes
 } from './progress-service'
+import {
+  addLabAttachment,
+  getCourseLabs,
+  listLabStates,
+  localLabUserId,
+  readLabHtml,
+  removeLabAttachment,
+  updateLabStatus
+} from './lab-service'
 import { validateQuiz } from '@shared/schemas'
+import type { LabSubmissionStatus } from '@shared/types'
 
 let presenterCallback: ((data: unknown) => void) | null = null
 
@@ -275,6 +285,85 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
       const lessonId = params?.lessonId || ''
       const notes = getInstructorNotes(courseId, lessonId)
       return ok({ notes })
+    }
+
+    if (method === 'GET' && path.match(/^\/api\/labs\/[^/]+$/)) {
+      const courseId = path.split('/').pop()!
+      const settings = dataStore.getSettings()
+      const userId = localLabUserId(settings.activeUserId)
+      const labs = getCourseLabs(courseId)
+      if (!labs.length) return ok({ title: null, labs: [] })
+      const manifest = getManifest(courseId)
+      return ok({
+        title: manifest?.lab?.title ?? null,
+        labs: listLabStates(userId, courseId)
+      })
+    }
+
+    if (method === 'GET' && path.match(/^\/api\/labs\/[^/]+\/[^/]+$/)) {
+      const parts = path.split('/')
+      const courseId = parts[3]
+      const labId = parts[4]
+      const settings = dataStore.getSettings()
+      const userId = localLabUserId(settings.activeUserId)
+      const lab = getCourseLabs(courseId).find((l) => l.id === labId)
+      if (!lab) return err('Lab not found', 404)
+      const html = readLabHtml(courseId, lab.entry)
+      const states = listLabStates(userId, courseId)
+      const state = states.find((s) => s.lab.id === labId)
+      return ok({
+        lab,
+        dueLabel: state?.dueLabel ?? lab.dueAfterLessonId,
+        submission: state?.submission ?? null,
+        html
+      })
+    }
+
+    if (method === 'POST' && path.match(/^\/api\/labs\/[^/]+\/[^/]+\/status$/)) {
+      const parts = path.split('/')
+      const courseId = parts[3]
+      const labId = parts[4]
+      const settings = dataStore.getSettings()
+      const userId = localLabUserId(settings.activeUserId)
+      if (!getCourseLabs(courseId).some((l) => l.id === labId)) return err('Lab not found', 404)
+      const { status, notes } = body as { status: LabSubmissionStatus; notes?: string }
+      const submission = updateLabStatus(userId, courseId, labId, status, notes)
+      return ok({ submission })
+    }
+
+    if (method === 'POST' && path.match(/^\/api\/labs\/[^/]+\/[^/]+\/attachments$/)) {
+      const parts = path.split('/')
+      const courseId = parts[3]
+      const labId = parts[4]
+      const settings = dataStore.getSettings()
+      const userId = localLabUserId(settings.activeUserId)
+      if (!getCourseLabs(courseId).some((l) => l.id === labId)) return err('Lab not found', 404)
+      const { filename, mimeType, contentBase64 } = body as {
+        filename: string
+        mimeType?: string
+        contentBase64: string
+      }
+      if (!filename || !contentBase64) return err('filename and contentBase64 required', 400)
+      const submission = addLabAttachment(
+        userId,
+        courseId,
+        labId,
+        filename,
+        mimeType || 'application/octet-stream',
+        contentBase64
+      )
+      return ok({ submission })
+    }
+
+    if (method === 'DELETE' && path.match(/^\/api\/labs\/[^/]+\/[^/]+\/attachments\/[^/]+$/)) {
+      const parts = path.split('/')
+      const courseId = parts[3]
+      const labId = parts[4]
+      const attachmentName = decodeURIComponent(parts[6])
+      const settings = dataStore.getSettings()
+      const userId = localLabUserId(settings.activeUserId)
+      const submission = removeLabAttachment(userId, courseId, labId, attachmentName)
+      return ok({ submission })
     }
 
     if (method === 'POST' && path === '/api/presenter/broadcast') {

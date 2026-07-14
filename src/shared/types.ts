@@ -120,6 +120,27 @@ export interface License {
   expiresAt: string | null
 }
 
+export type LabSubmissionStatus = 'not_started' | 'in_progress' | 'submitted' | 'completed'
+
+export interface LabAttachment {
+  name: string
+  originalName: string
+  mimeType: string
+  size: number
+  uploadedAt: string
+}
+
+export interface LabSubmission {
+  userId: string
+  courseId: string
+  labId: string
+  status: LabSubmissionStatus
+  attachments: LabAttachment[]
+  notes: string
+  updatedAt: string
+  submittedAt: string | null
+}
+
 export interface CourseCardData {
   id: string
   title: string

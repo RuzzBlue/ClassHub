@@ -29,17 +29,28 @@ Inspect any installed course's `course.json` after import for a complete example
 
 ### Optional `lab`
 
-When present, ClassHub shows a Lab item in the course Menu for students and instructors:
+When present, ClassHub shows a Lab item in the course Menu for students and instructors.
+Define multiple labs, each with its own HTML instructions and a curriculum due point:
 
 ```json
 "lab": {
   "title": "Laboratorio",
   "icon": "fa-flask",
-  "entry": "lab/index.html"
+  "labs": [
+    {
+      "id": "lab-01-explorer",
+      "title": "Blockchain explorer",
+      "order": 1,
+      "dueAfterLessonId": "l02-blockchain-basics",
+      "entry": "lab/lab-01-explorer/lab.html",
+      "summary": "Inspect a public transaction.",
+      "expectedResult": "Screenshot of a transaction detail page."
+    }
+  ]
 }
 ```
 
-`entry` is reserved for future lab content; the Menu opens an in-app panel today.
+Students upload evidence locally; instructor review/stats land when cloud sync is available.
 
 ### Required fields
 

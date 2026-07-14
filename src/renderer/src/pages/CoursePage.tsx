@@ -8,6 +8,7 @@ import { CourseHeader } from '../components/CourseHeader'
 import { LessonViewer } from '../components/LessonViewer'
 import { CourseHtmlPanel } from '../components/course/CourseHtmlPanel'
 import { CourseLinksPanel, CourseFilesPanel } from '../components/course/StudentCourseDashboard'
+import { CourseLabPanel } from '../components/course/CourseLabPanel'
 import { PlaceholderPanel } from '../components/layout/PlaceholderPanel'
 import { LoginModal } from '../components/LoginModal'
 import { ProfileModal } from '../components/ProfileModal'
@@ -98,6 +99,9 @@ export function CoursePage(): React.JSX.Element {
 
   const renderMainContent = (): React.JSX.Element => {
     if (contentView.kind === 'app-panel') {
+      if (contentView.panel === 'lab') {
+        return <CourseLabPanel courseId={courseId} />
+      }
       const menuRole = courseMenuRoleForUser(user)
       const item = findCourseAppMenu(menuRole, manifest, contentView.panel)
       return (

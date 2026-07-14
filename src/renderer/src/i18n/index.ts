@@ -223,6 +223,29 @@ const resources = {
           materialHint: 'Homework and student files for this course, including submission status.',
           lab: 'Lab',
           labHint: 'Hands-on practices for this course, outside the slide overview.'
+        },
+        lab: {
+          none: 'No labs are defined for this course.',
+          progressCount: '{{done}} / {{total}} labs submitted',
+          instructorHint:
+            'Instructor review (stats, enable/disable, grading) will connect when cloud sync is available. For now you can preview lab content.',
+          dueAfter: 'Due after',
+          expectedResult: 'Expected result',
+          instructions: 'Lab instructions',
+          missingHtml: 'Lab HTML content was not found.',
+          evidence: 'Evidence / uploads',
+          upload: 'Upload files',
+          noEvidence: 'No screenshots or files uploaded yet.',
+          start: 'Start lab',
+          submit: 'Mark as submitted',
+          reopen: 'Reopen for edits',
+          remove: 'Remove',
+          status: {
+            not_started: 'Not started',
+            in_progress: 'In progress',
+            submitted: 'Submitted',
+            completed: 'Completed'
+          }
         }
       },
       presenter: {
@@ -464,6 +487,29 @@ const resources = {
             'Tareas y archivos del estudiante para este curso, con estado de entrega.',
           lab: 'Laboratorio',
           labHint: 'Prácticas de este curso, fuera del resumen de diapositivas.'
+        },
+        lab: {
+          none: 'Este curso no tiene laboratorios definidos.',
+          progressCount: '{{done}} / {{total}} labs enviados',
+          instructorHint:
+            'La revisión del instructor (estadísticas, activar/desactivar, calificar) llegará con la sincronización en la nube. Por ahora puedes previsualizar el contenido.',
+          dueAfter: 'Después de',
+          expectedResult: 'Resultado esperado',
+          instructions: 'Instrucciones del laboratorio',
+          missingHtml: 'No se encontró el HTML del laboratorio.',
+          evidence: 'Evidencia / archivos',
+          upload: 'Subir archivos',
+          noEvidence: 'Aún no hay capturas ni archivos.',
+          start: 'Comenzar lab',
+          submit: 'Marcar como enviado',
+          reopen: 'Reabrir para editar',
+          remove: 'Quitar',
+          status: {
+            not_started: 'Sin iniciar',
+            in_progress: 'En progreso',
+            submitted: 'Enviado',
+            completed: 'Completado'
+          }
         }
       },
       presenter: {
