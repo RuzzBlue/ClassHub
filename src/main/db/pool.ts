@@ -1,14 +1,16 @@
-import pg from 'pg'
+import { neonConfig, Pool, type QueryResultRow } from '@neondatabase/serverless'
+import ws from 'ws'
 
-const { Pool } = pg
+// Electron's TCP stack often stalls on Neon TLS; WebSockets work in both Electron and Node.
+neonConfig.webSocketConstructor = ws
 
-let pool: pg.Pool | null = null
+let pool: Pool | null = null
 
 export function getDatabaseUrl(): string | null {
   return process.env.DATABASE_URL?.trim() || null
 }
 
-export function getPool(): pg.Pool {
+export function getPool(): Pool {
   const url = getDatabaseUrl()
   if (!url) {
     throw new Error('DATABASE_URL is not set. Copy .env.example to .env and add your Neon connection string.')
@@ -16,7 +18,7 @@ export function getPool(): pg.Pool {
   if (!pool) {
     pool = new Pool({
       connectionString: url,
-      connectionTimeoutMillis: 20_000,
+      connectionTimeoutMillis: 30_000,
       idleTimeoutMillis: 60_000,
       max: 10
     })
@@ -25,15 +27,15 @@ export function getPool(): pg.Pool {
   return pool
 }
 
-export async function query<T extends Record<string, unknown> = Record<string, unknown>>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   sql: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const result = await getPool().query(sql, params)
-  return result.rows as T[]
+  const result = await getPool().query<T>(sql, params)
+  return result.rows
 }
 
-export async function queryOne<T extends Record<string, unknown> = Record<string, unknown>>(
+export async function queryOne<T extends QueryResultRow = QueryResultRow>(
   sql: string,
   params: unknown[] = []
 ): Promise<T | null> {

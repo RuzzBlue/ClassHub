@@ -116,7 +116,11 @@ function initDataStore(): void {
 
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.classhub.app')
-  await initDatabase()
+  try {
+    await initDatabase()
+  } catch (err) {
+    console.error('[db] Failed to initialize Neon — cloud auth unavailable until reconnect.', err)
+  }
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })

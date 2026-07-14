@@ -15,7 +15,11 @@ const STATIC_DIR = existsSync(join(ROOT, 'out', 'renderer'))
   : join(ROOT, 'dist')
 
 async function main(): Promise<void> {
-  await initDatabase()
+  try {
+    await initDatabase()
+  } catch (err) {
+    console.error('[db] Failed to initialize Neon — cloud auth unavailable until reconnect.', err)
+  }
   dataStore.init()
   syncCourseRegistry()
 
