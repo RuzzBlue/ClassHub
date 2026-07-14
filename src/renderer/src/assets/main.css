@@ -222,14 +222,15 @@ body {
 .course-sidebar-expand {
   position: absolute;
   left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
   z-index: 30;
   width: 1.75rem;
-  height: 3rem;
-  border-radius: 0 0.5rem 0.5rem 0;
+  /* Match the Menu/Overview tab row that holds the collapse control */
+  height: 2.75rem;
+  border-radius: 0 0 0.5rem 0;
   border: 1px solid var(--color-border);
   border-left: none;
+  border-top: none;
   background: var(--color-surface);
   color: var(--color-text-muted);
   cursor: pointer;
