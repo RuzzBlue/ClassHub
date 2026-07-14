@@ -55,24 +55,16 @@ export const ExtraSchema = z.object({
   order: z.number()
 })
 
-export const CourseViewSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  icon: z.string().default('fa-file'),
-  entry: z.string(),
-  /** When "app", the renderer shows a built-in panel instead of loading entry HTML. */
-  render: z.enum(['html', 'app']).default('html'),
-  appPanel: z.enum(['student-dashboard']).optional()
-})
-
 export const InstructorConfigSchema = z.object({
-  dashboard: z.string().optional(),
-  notesRoot: z.string().optional(),
-  views: z.array(CourseViewSchema).default([])
+  notesRoot: z.string().optional()
 })
 
-export const StudentConfigSchema = z.object({
-  views: z.array(CourseViewSchema).default([])
+/** Optional hands-on practice area outside Overview slides/quizzes. */
+export const LabConfigSchema = z.object({
+  title: z.string().optional(),
+  icon: z.string().default('fa-flask'),
+  /** Reserved for future lab content; Menus use an app panel for now. */
+  entry: z.string().optional()
 })
 
 export const CourseManifestSchema = z.object({
@@ -93,7 +85,7 @@ export const CourseManifestSchema = z.object({
   navigation: NavigationSchema,
   extras: z.array(ExtraSchema).default([]),
   instructor: InstructorConfigSchema.optional(),
-  student: StudentConfigSchema.optional(),
+  lab: LabConfigSchema.optional(),
   demoLicenseKey: z.string().optional()
 })
 
@@ -102,7 +94,7 @@ export type Module = z.infer<typeof ModuleSchema>
 export type Unit = z.infer<typeof UnitSchema>
 export type Lesson = z.infer<typeof LessonSchema>
 export type Extra = z.infer<typeof ExtraSchema>
-export type CourseView = z.infer<typeof CourseViewSchema>
+export type LabConfig = z.infer<typeof LabConfigSchema>
 export type AccessPolicy = z.infer<typeof AccessPolicySchema>
 
 export const QuizQuestionSchema = z.object({

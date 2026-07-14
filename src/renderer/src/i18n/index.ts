@@ -199,7 +199,31 @@ const resources = {
         quizPassed: 'Quiz passed!',
         quizFailed: 'Quiz not passed. Try again.',
         enterLicense: 'This content requires a license.',
-        licensePlaceholder: 'Enter license key'
+        licensePlaceholder: 'Enter license key',
+        appMenus: {
+          instructorPanel: 'Instructor Panel',
+          instructorPanelHint:
+            'Course health for this class: roster snapshot, completion, open tickets, and upcoming sessions.',
+          studentPanel: 'Student Panel',
+          studentPanelHint:
+            'Your home for this course: continue learning, progress summary, and recent activity.',
+          attendance: 'Attendance',
+          attendanceHint: 'Mark and review class sessions for this course.',
+          grades: 'Grades',
+          gradesHint: 'Quiz and assignment scores for this course.',
+          tickets: 'Tickets',
+          ticketsHint: 'Help and Q&A threads for this course.',
+          config: 'Course Settings',
+          configHint: 'Teaching preferences for this course (unlock rules, pass %, attendance policy).',
+          progress: 'Progress',
+          progressHint: 'Module, unit, and lesson checklist for this course.',
+          achievements: 'Achievements',
+          achievementsHint: 'Badges earned from progress and quizzes in this course.',
+          material: 'Material',
+          materialHint: 'Homework and student files for this course, including submission status.',
+          lab: 'Lab',
+          labHint: 'Hands-on practices for this course, outside the slide overview.'
+        }
       },
       presenter: {
         title: 'Presenter Mode',
@@ -414,7 +438,33 @@ const resources = {
         quizPassed: '¡Cuestionario aprobado!',
         quizFailed: 'No aprobado. Intenta de nuevo.',
         enterLicense: 'Este contenido requiere licencia.',
-        licensePlaceholder: 'Ingresa la clave de licencia'
+        licensePlaceholder: 'Ingresa la clave de licencia',
+        appMenus: {
+          instructorPanel: 'Panel del instructor',
+          instructorPanelHint:
+            'Salud del curso: roster, avance, tickets abiertos y próximas sesiones.',
+          studentPanel: 'Panel del estudiante',
+          studentPanelHint:
+            'Tu inicio en este curso: continuar, resumen de avance y actividad reciente.',
+          attendance: 'Asistencia',
+          attendanceHint: 'Registrar y revisar sesiones de clase de este curso.',
+          grades: 'Notas',
+          gradesHint: 'Calificaciones de cuestionarios y tareas de este curso.',
+          tickets: 'Tickets',
+          ticketsHint: 'Ayuda y preguntas asociadas a este curso.',
+          config: 'Configuración del curso',
+          configHint:
+            'Preferencias de enseñanza de este curso (desbloqueo, nota mínima, asistencia).',
+          progress: 'Progreso',
+          progressHint: 'Lista de módulos, unidades y lecciones de este curso.',
+          achievements: 'Logros',
+          achievementsHint: 'Insignias por avance y cuestionarios en este curso.',
+          material: 'Material',
+          materialHint:
+            'Tareas y archivos del estudiante para este curso, con estado de entrega.',
+          lab: 'Laboratorio',
+          labHint: 'Prácticas de este curso, fuera del resumen de diapositivas.'
+        }
       },
       presenter: {
         title: 'Modo Presentador',

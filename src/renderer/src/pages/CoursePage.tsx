@@ -7,14 +7,15 @@ import { CourseSidebar, checkAccess } from '../components/CourseSidebar'
 import { CourseHeader } from '../components/CourseHeader'
 import { LessonViewer } from '../components/LessonViewer'
 import { CourseHtmlPanel } from '../components/course/CourseHtmlPanel'
-import {
-  StudentCourseDashboard,
-  CourseLinksPanel,
-  CourseFilesPanel
-} from '../components/course/StudentCourseDashboard'
+import { CourseLinksPanel, CourseFilesPanel } from '../components/course/StudentCourseDashboard'
+import { PlaceholderPanel } from '../components/layout/PlaceholderPanel'
 import { LoginModal } from '../components/LoginModal'
 import { ProfileModal } from '../components/ProfileModal'
 import { apiFetch, openPresenter } from '../lib/api-client'
+import {
+  courseMenuRoleForUser,
+  findCourseAppMenu
+} from '../lib/course-app-menus'
 import { findLesson } from '@shared/schemas'
 
 export function CoursePage(): React.JSX.Element {
@@ -96,8 +97,16 @@ export function CoursePage(): React.JSX.Element {
   }
 
   const renderMainContent = (): React.JSX.Element => {
-    if (contentView.kind === 'student-dashboard') {
-      return <StudentCourseDashboard courseId={courseId} manifest={manifest} />
+    if (contentView.kind === 'app-panel') {
+      const menuRole = courseMenuRoleForUser(user)
+      const item = findCourseAppMenu(menuRole, manifest, contentView.panel)
+      return (
+        <PlaceholderPanel
+          title={item?.titleOverride ?? t(item?.titleKey ?? 'course.menu')}
+          hint={t(item?.hintKey ?? 'settings.comingSoon')}
+          icon={item?.icon ?? 'fa-puzzle-piece'}
+        />
+      )
     }
     if (contentView.kind === 'html') {
       return <CourseHtmlPanel courseId={courseId} path={contentView.path} />

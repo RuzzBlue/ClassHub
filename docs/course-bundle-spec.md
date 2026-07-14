@@ -15,14 +15,31 @@ MyCourse/
           lesson.html  # Single renderable lesson with sections
           quiz.json    # Optional structured quiz
           assets/      # Lesson-specific assets
-  extras/              # Optional course features
-  instructor/          # Instructor-only resources
+  extras/              # Optional author-shipped extras (glossary, downloads, links)
+  instructor/          # Optional instructor notes/resources (notesRoot)
+  lab/                 # Optional — declare in course.json to show Lab in Menu
 ```
 
 ## course.json
 
-The manifest defines metadata, navigation, access rules, extras, and instructor config.
+The manifest defines metadata, navigation, access rules, extras, and optional lab/instructor notes.
+Role menus (instructor/student panels, grades, tickets, etc.) are provided by the ClassHub app — not by course packs.
+
 Inspect any installed course's `course.json` after import for a complete example.
+
+### Optional `lab`
+
+When present, ClassHub shows a Lab item in the course Menu for students and instructors:
+
+```json
+"lab": {
+  "title": "Laboratorio",
+  "icon": "fa-flask",
+  "entry": "lab/index.html"
+}
+```
+
+`entry` is reserved for future lab content; the Menu opens an in-app panel today.
 
 ### Required fields
 

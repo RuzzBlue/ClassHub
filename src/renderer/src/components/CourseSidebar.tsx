@@ -6,7 +6,11 @@ import { useAppStore } from '../stores/app-store'
 import { useCourseStore } from '../stores/app-store'
 import { apiFetch } from '../lib/api-client'
 import { courseRoleForUser } from '../lib/role-label'
-import { getRoleViewsForUser } from '../lib/course-views'
+import {
+  courseMenuRoleForUser,
+  getCourseAppMenus,
+  getDefaultCoursePanelId
+} from '../lib/course-app-menus'
 import { cn } from '../lib/utils'
 import { CourseProgressWidget } from './course/CourseProgressWidget'
 import { CourseCurriculumOverview } from './course/CourseCurriculumOverview'
@@ -27,21 +31,21 @@ export function CourseSidebar({
   accessMap
 }: Props): React.JSX.Element {
   const { t } = useTranslation()
-  const { sidebarOpen, activeTab, setActiveTab, toggleSidebar, selectedMenuId, selectRoleView, selectExtra } =
+  const { sidebarOpen, activeTab, setActiveTab, toggleSidebar, selectedMenuId, selectCourseMenu, selectExtra } =
     useCourseStore()
   const { user } = useAppStore()
 
   const courseRole = courseRoleForUser(user?.role)
-  const roleViews = getRoleViewsForUser(manifest, user)
+  const menuRole = courseMenuRoleForUser(user)
+  const appMenus = getCourseAppMenus(menuRole, manifest)
 
-  // If auth finishes after course load, ensure a menu view is selected on the Menu tab.
+  // If auth finishes after course load, ensure a menu panel is selected on the Menu tab.
   useEffect(() => {
     if (activeTab !== 'menu') return
-    if (roleViews.length === 0) return
-    if (!selectedMenuId) {
-      selectRoleView(roleViews[0])
+    if (!selectedMenuId || !appMenus.some((item) => item.id === selectedMenuId)) {
+      selectCourseMenu(getDefaultCoursePanelId(menuRole))
     }
-  }, [activeTab, manifest.id, user?.id, user?.role, selectedMenuId, roleViews.length, selectRoleView])
+  }, [activeTab, manifest.id, user?.id, user?.role, selectedMenuId, menuRole, selectCourseMenu])
 
   const extras = manifest.extras
     .filter((e) => user?.role === 'admin' || e.roles.includes(courseRole))
@@ -103,18 +107,18 @@ export function CourseSidebar({
           </div>
 
           <div className="flex-1 overflow-auto p-2 space-y-1 min-h-0">
-            {roleViews.map((view) => (
+            {appMenus.map((item) => (
               <button
-                key={view.id}
+                key={item.id}
                 type="button"
                 className={cn(
                   'course-sidebar-menu-item',
-                  selectedMenuId === view.id && 'course-sidebar-menu-item-active'
+                  selectedMenuId === item.id && 'course-sidebar-menu-item-active'
                 )}
-                onClick={() => selectRoleView(view)}
+                onClick={() => selectCourseMenu(item.id)}
               >
-                  <i className={`fas ${view.icon} course-sidebar-menu-icon`} aria-hidden="true" />
-                <span className="truncate">{view.title}</span>
+                <i className={`fas ${item.icon} course-sidebar-menu-icon`} aria-hidden="true" />
+                <span className="truncate">{item.titleOverride ?? t(item.titleKey)}</span>
               </button>
             ))}
           </div>

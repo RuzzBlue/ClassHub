@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { AppSettings, CourseCardData, User } from '@shared/types'
-import type { CourseManifest, Extra, CourseView } from '@shared/schemas'
+import type { CourseManifest, Extra } from '@shared/schemas'
 import { getOrderedLessons } from '@shared/schemas'
 import type { ProgressSnapshot } from '@shared/types'
 import { apiFetch } from '../lib/api-client'
@@ -81,11 +81,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   }
 }))
 
-import { getDefaultRoleView, getRoleViewsForUser } from '../lib/course-views'
+import {
+  courseMenuRoleForUser,
+  getDefaultCoursePanelId,
+  type CourseAppPanelId
+} from '../lib/course-app-menus'
 
 export type CourseContentView =
   | { kind: 'lesson' }
-  | { kind: 'student-dashboard' }
+  | { kind: 'app-panel'; panel: CourseAppPanelId }
   | { kind: 'html'; path: string; menuId: string }
   | { kind: 'links'; extraId: string; path: string }
   | { kind: 'files'; extraId: string; path: string; title: string }
@@ -106,7 +110,7 @@ interface CourseState {
   updateProgress: (lessonId: string, updates: Record<string, unknown>) => Promise<void>
   toggleSidebar: () => void
   setActiveTab: (tab: 'menu' | 'overview') => void
-  selectRoleView: (view: CourseView) => void
+  selectCourseMenu: (panel: CourseAppPanelId) => void
   selectExtra: (extra: Extra) => void
 }
 
@@ -135,22 +139,16 @@ export const useCourseStore = create<CourseState>((set, get) => ({
         .flatMap((m) => m.units.flatMap((u) => u.lessons))
         .sort((a, b) => a.order - b.order)
       const firstLessonId = lessons[0]?.id ?? null
+      const role = courseMenuRoleForUser(useAppStore.getState().user)
+      const defaultPanel = getDefaultCoursePanelId(role)
 
       set({
         manifest,
         currentLessonId: firstLessonId,
         activeTab: 'menu',
-        contentView: { kind: 'lesson' },
-        selectedMenuId: null
+        contentView: { kind: 'app-panel', panel: defaultPanel },
+        selectedMenuId: defaultPanel
       })
-
-      const user = useAppStore.getState().user
-      const defaultView = getDefaultRoleView(manifest, user)
-      if (defaultView) {
-        get().selectRoleView(defaultView)
-      } else if (firstLessonId) {
-        set({ currentLessonId: firstLessonId, contentView: { kind: 'lesson' } })
-      }
     }
     if (progressRes.ok && progressRes.data) {
       set({
@@ -190,11 +188,9 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     }
 
     if (tab === 'menu') {
-      const user = useAppStore.getState().user
-      const defaultView = getDefaultRoleView(manifest, user)
-      if (defaultView) {
-        get().selectRoleView(defaultView)
-      }
+      const role = courseMenuRoleForUser(useAppStore.getState().user)
+      const defaultPanel = getDefaultCoursePanelId(role)
+      get().selectCourseMenu(defaultPanel)
       set({ activeTab: 'menu' })
       return
     }
@@ -211,17 +207,10 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     set({ activeTab: 'overview' })
   },
 
-  selectRoleView: (view) => {
-    if (view.render === 'app' && view.appPanel === 'student-dashboard') {
-      set({
-        contentView: { kind: 'student-dashboard' },
-        selectedMenuId: view.id
-      })
-      return
-    }
+  selectCourseMenu: (panel) => {
     set({
-      contentView: { kind: 'html', path: view.entry, menuId: view.id },
-      selectedMenuId: view.id
+      contentView: { kind: 'app-panel', panel },
+      selectedMenuId: panel
     })
   },
 
